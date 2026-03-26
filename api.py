@@ -2,8 +2,10 @@
 
 import base64
 import io
+import os
 import traceback
 
+import boto3
 import cv2
 import numpy as np
 import pandas as pd
@@ -14,9 +16,23 @@ from ultralytics import YOLO
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
+MODEL_PATH = "model/best.pt"
 
-model = YOLO("model/best.pt")
+model = YOLO(MODEL_PATH)
 rule_table_df = pd.read_csv("rule_table.csv")
+
+
+def download_model():
+    if not os.path.exists(MODEL_PATH):
+        os.makedirs("model", exist_ok=True)
+        s3 = boto3.client(
+            "s3",
+            endpoint_url="https://s3.selcdn.ru",
+            aws_access_key_id=os.getenv("S3_KEY"),
+            aws_secret_access_key=os.getenv("S3_SECRET"),
+        )
+        s3.download_file("wagon-models", "best.pt", MODEL_PATH)
+        print("Model downloaded")
 
 
 def preprocess_image(pil_image):
