@@ -1,0 +1,33 @@
+[tool.black]
+line-length = 88
+target-version = ["py310", "py311"]
+include = "\\.pyi?$"
+extend-exclude = """
+/(
+    \\.eggs
+  | \\.git
+  | \\.hg
+  | \\.mypy_cache
+  | \\.tox
+  | \\.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+)/
+"""
+
+[tool.isort]
+profile = "black"
+line_length = 88
+multi_line_output = 3
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+exclude = [
+    "docs/ML_System_Design_Doc\\.md$",
+    "templates/index.html"
+]
