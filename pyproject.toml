@@ -29,5 +29,6 @@ warn_unused_configs = true
 ignore_missing_imports = true
 exclude = [
     "docs/ML_System_Design_Doc\\.md$",
-    "templates/index.html"
+    "templates/index.html",
+    ".gitignore"
 ]

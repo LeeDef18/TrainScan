@@ -1,5 +1,5 @@
 [MASTER]
-ignore=tests,venv,.venv, docs/ML_System_Design_Doc.md, index.html
+ignore=tests,venv,.venv, docs/ML_System_Design_Doc.md, index.html, .gitignore
 
 [MESSAGES CONTROL]
 disable=C0114,C0115,C0116,C0301,R0903
