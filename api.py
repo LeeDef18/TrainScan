@@ -14,12 +14,15 @@ from fastapi.templating import Jinja2Templates
 from PIL import Image
 from ultralytics import YOLO
 
+MODEL_PATH = "model/best.pt"
+S3_BUCKET = "wagon-models"
+RULE_TABLE_CSV = "rule_table.csv"
+
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
-MODEL_PATH = "model/best.pt"
 
-model = YOLO(MODEL_PATH)
-rule_table_df = pd.read_csv("rule_table.csv")
+_model_store = {}
+rule_table_df = pd.read_csv(RULE_TABLE_CSV)
 
 
 def download_model():
@@ -31,12 +34,18 @@ def download_model():
             aws_access_key_id=os.getenv("S3_KEY"),
             aws_secret_access_key=os.getenv("S3_SECRET"),
         )
-        s3.download_file("wagon-models", "best.pt", MODEL_PATH)
+        s3.download_file(S3_BUCKET, "best.pt", MODEL_PATH)
         print("Model downloaded")
 
 
-def preprocess_image(pil_image):
+def get_model():
+    if "model" not in _model_store:
+        download_model()
+        _model_store["model"] = YOLO(MODEL_PATH)
+    return _model_store["model"]
 
+
+def preprocess_image(pil_image):
     img = np.array(pil_image)
     img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
 
@@ -46,11 +55,10 @@ def preprocess_image(pil_image):
 
     lab = cv2.cvtColor(adjusted, cv2.COLOR_BGR2LAB)
     l, a, b = cv2.split(lab)
-
     clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
     cl = clahe.apply(l)
-
     limg = cv2.merge((cl, a, b))
+
     final_img = cv2.cvtColor(limg, cv2.COLOR_LAB2BGR)
     final_img = cv2.GaussianBlur(final_img, (3, 3), 0)
 
@@ -66,7 +74,6 @@ async def home(request: Request):
 async def predict(file: UploadFile = File(...), wagon_type: str = Form(...)):
     try:
         image_bytes = await file.read()
-
         try:
             pil_image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
         except Exception:
@@ -74,7 +81,7 @@ async def predict(file: UploadFile = File(...), wagon_type: str = Form(...)):
 
         preprocessed_img = preprocess_image(pil_image)
 
-        results = model.predict(source=preprocessed_img, conf=0.25, iou=0.45)
+        results = get_model().predict(source=preprocessed_img, conf=0.25, iou=0.45)
         result = results[0]
 
         predictions = []
@@ -84,7 +91,7 @@ async def predict(file: UploadFile = File(...), wagon_type: str = Form(...)):
             x1, y1, x2, y2 = box.xyxy[0].tolist()
             conf = float(box.conf[0])
             cls_id = int(box.cls[0])
-            cls_name = model.names[cls_id]
+            cls_name = get_model().names[cls_id]
 
             detected_classes.append(cls_name)
 
@@ -114,7 +121,6 @@ async def predict(file: UploadFile = File(...), wagon_type: str = Form(...)):
 
         result_img_bgr = result.plot()
         _, buffer = cv2.imencode(".jpg", result_img_bgr)
-
         result_base64 = base64.b64encode(buffer).decode()
         orig_base64 = base64.b64encode(image_bytes).decode()
 
