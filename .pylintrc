@@ -4,7 +4,7 @@ extension-pkg-allow-list=cv2
 generated-members=cv2.*
 
 [MESSAGES CONTROL]
-disable=C0114,C0115,C0116,R0903,R0913
+disable=C0114,C0115,C0116,R0902,R0903,R0913
 
 [FORMAT]
 max-line-length=88

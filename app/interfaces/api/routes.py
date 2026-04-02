@@ -16,6 +16,7 @@ from app.infrastructure.rendering.result_serializer import serialize_prediction_
 from app.infrastructure.repositories.csv_orientation_rules_repository import (
     CsvOrientationRulesRepository,
 )
+from app.infrastructure.storage.file_downloader import FileDownloader
 from app.infrastructure.storage.s3_client import S3Client
 
 router = APIRouter()
@@ -24,10 +25,16 @@ router = APIRouter()
 def build_predict_use_case() -> PredictUseCase:
     settings = get_settings()
     s3_client = S3Client(settings.s3_endpoint, settings.s3_key, settings.s3_secret)
+    file_downloader = FileDownloader(s3_client)
     model_loader = ModelLoader(settings, s3_client=s3_client)
     model = model_loader.get_model()
+    rule_table_path = file_downloader.ensure_file(
+        bucket=settings.rule_table_bucket,
+        key=settings.rule_table_key,
+        path=settings.rule_table_path,
+    )
     inference = YOLOInference(model=model, conf=settings.conf, iou=settings.iou)
-    rules_repository = CsvOrientationRulesRepository(settings.rule_table)
+    rules_repository = CsvOrientationRulesRepository(rule_table_path)
     orientation_service = OrientationService(rules_repository)
     detection_extractor = YoloDetectionExtractor()
 

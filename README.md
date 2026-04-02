@@ -70,12 +70,14 @@ docs/               проектная документация
 Основные переменные:
 
 - `MODEL_PATH` - локальный путь до файла модели, по умолчанию `model/best.pt`
+- `MODEL_BUCKET` - bucket с моделью
 - `MODEL_KEY` - ключ объекта модели в S3, по умолчанию `best.pt`
-- `S3_BUCKET` - bucket с моделью
 - `S3_ENDPOINT` - endpoint S3-совместимого хранилища
 - `S3_KEY` - access key
 - `S3_SECRET` - secret key
-- `RULE_TABLE` - путь до CSV-таблицы правил, по умолчанию `rule_table.csv`
+- `RULE_TABLE_PATH` - локальный путь до CSV-таблицы правил, по умолчанию `rule_table.csv`
+- `RULE_TABLE_BUCKET` - bucket с таблицей правил
+- `RULE_TABLE_KEY` - ключ объекта CSV-таблицы правил в S3, по умолчанию `rule_table.csv`
 - `MODEL_CONF` - confidence threshold для YOLO
 - `MODEL_IOU` - IoU threshold для YOLO
 
@@ -84,11 +86,13 @@ docs/               проектная документация
 ```powershell
 $env:MODEL_PATH="model/best.pt"
 $env:MODEL_KEY="best.pt"
-$env:S3_BUCKET="wagon-models"
+$env:MODEL_BUCKET="wagon-models"
 $env:S3_ENDPOINT="https://s3.selcdn.ru"
 $env:S3_KEY="<your-key>"
 $env:S3_SECRET="<your-secret>"
-$env:RULE_TABLE="rule_table.csv"
+$env:RULE_TABLE_PATH="rule_table.csv"
+$env:RULE_TABLE_BUCKET="wagon-rules"
+$env:RULE_TABLE_KEY="rule_table.csv"
 $env:MODEL_CONF="0.25"
 $env:MODEL_IOU="0.45"
 ```
@@ -104,7 +108,8 @@ source .venv/bin/activate
 ```bash
 pip install -r requirements.txt
 ```
-3. Запусти FastAPI.
+3. Укажи доступ к S3 и пути для локального кэша модели и таблицы правил.
+4. Запусти FastAPI.
 ```bash
 uvicorn app.main:app --reload
 ```
@@ -140,6 +145,13 @@ http://127.0.0.1:8000/docs
 
 - `file` - изображение вагона
 - `wagon_type` - тип вагона, для которого есть правило в таблице
+
+При первом запуске сервис скачивает:
+
+- модель из `MODEL_BUCKET` / `MODEL_KEY`
+- таблицу правил из `RULE_TABLE_BUCKET` / `RULE_TABLE_KEY`
+
+Файлы сохраняются локально по путям `MODEL_PATH` и `RULE_TABLE_PATH` и затем переиспользуются.
 
 ### Пример через curl
 
@@ -212,11 +224,13 @@ docker build -t trainscan .
 docker run --rm -p 8000:8000 \
   -e MODEL_PATH=model/best.pt \
   -e MODEL_KEY=best.pt \
-  -e S3_BUCKET=wagon-models \
+  -e MODEL_BUCKET=wagon-models \
   -e S3_ENDPOINT=https://s3.selcdn.ru \
   -e S3_KEY=<your-key> \
   -e S3_SECRET=<your-secret> \
-  -e RULE_TABLE=rule_table.csv \
+  -e RULE_TABLE_PATH=rule_table.csv \
+  -e RULE_TABLE_BUCKET=wagon-rules \
+  -e RULE_TABLE_KEY=rule_table.csv \
   trainscan
 ```
 

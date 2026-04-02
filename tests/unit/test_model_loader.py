@@ -19,12 +19,14 @@ def test_model_loader_downloads_when_model_missing(monkeypatch, tmp_path):
     model_path = tmp_path / "model" / "best.pt"
     settings = Settings(
         model_path=str(model_path),
-        s3_bucket="bucket",
-        rule_table="rules.csv",
+        model_bucket="bucket",
+        rule_table_path="rules.csv",
+        rule_table_bucket="rules-bucket",
         s3_endpoint="https://example.com",
         s3_key=None,
         s3_secret=None,
         model_key="best.pt",
+        rule_table_key="rule_table.csv",
         conf=0.25,
         iou=0.45,
     )
@@ -54,12 +56,14 @@ def test_model_loader_reuses_cached_model(monkeypatch, tmp_path):
     model_path.write_text("weights", encoding="utf-8")
     settings = Settings(
         model_path=str(model_path),
-        s3_bucket="bucket",
-        rule_table="rules.csv",
+        model_bucket="bucket",
+        rule_table_path="rules.csv",
+        rule_table_bucket="rules-bucket",
         s3_endpoint="https://example.com",
         s3_key=None,
         s3_secret=None,
         model_key="best.pt",
+        rule_table_key="rule_table.csv",
         conf=0.25,
         iou=0.45,
     )
