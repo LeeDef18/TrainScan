@@ -1,0 +1,50 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+
+jobs:
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: 3.10
+
+      - run: pip install -r requirements.txt
+      - run: pip install black isort flake8 pylint mypy
+      - run: black --check app tests
+      - run: isort --check-only app tests
+      - run: flake8 app tests
+      - run: pylint app --fail-under=8.0
+      - run: mypy app
+
+  test:
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: 3.10
+
+      - run: pip install -r requirements.txt
+      - run: pip install pytest-cov httpx
+
+      - name: Run tests
+        run: pytest --cov=app --cov-report=term-missing --cov-report=xml --cov-fail-under=70
+
+  docker:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Build Docker image
+        run: docker build -t trainscan .

@@ -1,5 +1,5 @@
 [flake8]
 max-line-length = 88
 extend-ignore = E203, W503
-exclude = .git,__pycache__,build,dist,venv,.venv, docs/ML_System_Design_Doc.md, index.html, .gitignore,
+exclude = .git,__pycache__,build,dist,venv,.venv,.mypy_cache
 max-complexity = 10

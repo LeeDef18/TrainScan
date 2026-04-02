@@ -7,3 +7,4 @@ python-multipart==0.0.6
 ultralytics
 pandas==2.3.3
 boto3==1.42.76
+pytest==9.0.2

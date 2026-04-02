@@ -1,8 +1,10 @@
 [MASTER]
-ignore=tests,venv,.venv, docs/ML_System_Design_Doc.md, index.html, .gitignore
+ignore=venv,.venv,__pycache__
+extension-pkg-allow-list=cv2
+generated-members=cv2.*
 
 [MESSAGES CONTROL]
-disable=C0114,C0115,C0116,C0301,R0903
+disable=C0114,C0115,C0116,R0903,R0913
 
 [FORMAT]
 max-line-length=88
