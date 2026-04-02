@@ -86,7 +86,7 @@ docs/               проектная документация
 MODEL_PATH=model/best.pt
 MODEL_BUCKET=wagon-models
 MODEL_KEY=best.pt
-RULE_TABLE_BUCKET=wagon-rules
+RULE_TABLE_BUCKET=table-of-rule
 RULE_TABLE_KEY=rule_table.csv
 S3_ENDPOINT=https://s3.selcdn.ru
 S3_KEY=<your-key>
@@ -221,7 +221,7 @@ docker run --rm -p 8000:8000 \
   -e MODEL_PATH=model/best.pt \
   -e MODEL_BUCKET=wagon-models \
   -e MODEL_KEY=best.pt \
-  -e RULE_TABLE_BUCKET=wagon-rules \
+  -e RULE_TABLE_BUCKET=table-of-rule \
   -e RULE_TABLE_KEY=rule_table.csv \
   -e S3_ENDPOINT=https://s3.selcdn.ru \
   -e S3_KEY=<your-key> \

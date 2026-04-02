@@ -24,7 +24,7 @@ def get_settings() -> Settings:
         model_path=os.getenv("MODEL_PATH", "model/best.pt"),
         model_bucket=os.getenv("MODEL_BUCKET", os.getenv("S3_BUCKET", "wagon-models")),
         rule_table_path=os.getenv("RULE_TABLE_PATH", "data/rules/rule_table.csv"),
-        rule_table_bucket=os.getenv("RULE_TABLE_BUCKET", "wagon-rules"),
+        rule_table_bucket=os.getenv("RULE_TABLE_BUCKET", "table-of-rule"),
         s3_endpoint=os.getenv("S3_ENDPOINT", "https://s3.selcdn.ru"),
         s3_key=os.getenv("S3_KEY"),
         s3_secret=os.getenv("S3_SECRET"),
