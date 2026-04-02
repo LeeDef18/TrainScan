@@ -75,7 +75,7 @@ docs/               проектная документация
 - `S3_ENDPOINT` - endpoint S3-совместимого хранилища
 - `S3_KEY` - access key
 - `S3_SECRET` - secret key
-- `RULE_TABLE_PATH` - локальный путь до CSV-таблицы правил, по умолчанию `rule_table.csv`
+- `RULE_TABLE_PATH` - локальный путь для кэширования CSV-таблицы правил, по умолчанию `data/rules/rule_table.csv`
 - `RULE_TABLE_BUCKET` - bucket с таблицей правил
 - `RULE_TABLE_KEY` - ключ объекта CSV-таблицы правил в S3, по умолчанию `rule_table.csv`
 - `MODEL_CONF` - confidence threshold для YOLO
@@ -90,7 +90,7 @@ $env:MODEL_BUCKET="wagon-models"
 $env:S3_ENDPOINT="https://s3.selcdn.ru"
 $env:S3_KEY="<your-key>"
 $env:S3_SECRET="<your-secret>"
-$env:RULE_TABLE_PATH="rule_table.csv"
+$env:RULE_TABLE_PATH="data/rules/rule_table.csv"
 $env:RULE_TABLE_BUCKET="wagon-rules"
 $env:RULE_TABLE_KEY="rule_table.csv"
 $env:MODEL_CONF="0.25"
@@ -108,7 +108,7 @@ source .venv/bin/activate
 ```bash
 pip install -r requirements.txt
 ```
-3. Укажи доступ к S3 и пути для локального кэша модели и таблицы правил.
+3. Скопируй `.env.example` в `.env` и заполни параметры object storage.
 4. Запусти FastAPI.
 ```bash
 uvicorn app.main:app --reload
@@ -228,7 +228,7 @@ docker run --rm -p 8000:8000 \
   -e S3_ENDPOINT=https://s3.selcdn.ru \
   -e S3_KEY=<your-key> \
   -e S3_SECRET=<your-secret> \
-  -e RULE_TABLE_PATH=rule_table.csv \
+  -e RULE_TABLE_PATH=data/rules/rule_table.csv \
   -e RULE_TABLE_BUCKET=wagon-rules \
   -e RULE_TABLE_KEY=rule_table.csv \
   trainscan
@@ -243,3 +243,20 @@ docker run --rm -p 8000:8000 \
 - `docker` - проверка сборки Docker-образа
 
 Coverage-отчет сохраняется как artifact после job `test`.
+
+
+Пример минимального заполнения `.env`:
+
+```env
+MODEL_PATH=model/best.pt
+MODEL_BUCKET=wagon-models
+MODEL_KEY=best.pt
+RULE_TABLE_PATH=data/rules/rule_table.csv
+RULE_TABLE_BUCKET=wagon-rules
+RULE_TABLE_KEY=rule_table.csv
+S3_ENDPOINT=https://s3.selcdn.ru
+S3_KEY=<your-key>
+S3_SECRET=<your-secret>
+MODEL_CONF=0.25
+MODEL_IOU=0.45
+```
