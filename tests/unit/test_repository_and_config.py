@@ -1,4 +1,4 @@
-from app.core.config import Settings, get_settings
+from app.config.config import Settings, get_settings
 from app.infrastructure.repositories.csv_orientation_rules_repository import (
     CsvOrientationRulesRepository,
 )
@@ -52,6 +52,7 @@ def test_get_settings_reads_environment(monkeypatch):
         rule_table_key="orientation.csv",
         conf=0.5,
         iou=0.6,
+        _env_file=None,
     )
 
     get_settings.cache_clear()

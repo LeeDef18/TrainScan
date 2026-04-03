@@ -5,7 +5,7 @@ from PIL import Image, UnidentifiedImageError
 
 from app.application.dto.prediction_response import PredictionResponse
 from app.application.predict_use_case import PredictUseCase
-from app.core.config import get_settings
+from app.config.config import get_settings
 from app.domain.entities.prediction import Wagon
 from app.domain.services.orientation_service import OrientationService
 from app.infrastructure.model.detection_extractor import YoloDetectionExtractor

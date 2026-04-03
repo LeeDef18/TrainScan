@@ -47,7 +47,7 @@ docs/               проектная документация
 - `app/application` - orchestration сценария предсказания через `PredictUseCase`
 - `app/infrastructure` - конкретные реализации для модели, rules table, preprocessing, S3 и сериализации
 - `app/interfaces` - REST API слой
-- `app/core/config.py` - единая точка доступа к переменным окружения
+- `app/config/config.py` - единая точка доступа к переменным окружения
 
 ## Технологии
 
@@ -65,7 +65,7 @@ docs/               проектная документация
 
 ## Переменные окружения
 
-Приложение использует настройки из `app/core/config.py`.
+Приложение использует настройки из `app/config/config.py`.
 
 Основные переменные:
 

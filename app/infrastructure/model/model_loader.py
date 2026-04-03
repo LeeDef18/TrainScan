@@ -1,6 +1,6 @@
 from importlib import import_module
 
-from app.core.config import Settings
+from app.config.config import Settings
 from app.infrastructure.storage.file_downloader import FileDownloader
 from app.infrastructure.storage.storage_port import StoragePort
 
