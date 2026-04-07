@@ -1,3 +1,25 @@
+[project]
+name = "TrainScan"
+version = "0.1.0"
+description = "Detection service to extract the orientation of train cars with a single image"
+readme = "README.md"
+requires-python = ">=3.10, <3.12"
+dependencies = [
+    "boto3==1.42.76",
+    "fastapi==0.104.1",
+    "numpy==1.24.3",
+    "opencv-python-headless==4.8.1.78",
+    "pandas==2.3.3",
+    "pillow==10.1.0",
+    "pydantic-settings==2.10.1",
+    "pytest==9.0.2",
+    "python-multipart==0.0.6",
+    "ultralytics>=8.4.34",
+    "uvicorn==0.24.0",
+]
+
+
+
 [tool.black]
 line-length = 88
 target-version = ["py310", "py311"]
