@@ -1,3 +1,36 @@
+[project]
+name = "trainscan"
+version = "0.1.0"
+description = "API for wagon orientation detection using YOLO and rule engine"
+requires-python = ">=3.10,<3.12"
+dependencies = [
+    "fastapi==0.104.1",
+    "pydantic-settings==2.10.1",
+    "uvicorn==0.24.0",
+    "opencv-python-headless==4.8.1.78",
+    "pillow==10.1.0",
+    "numpy==1.24.3",
+    "python-multipart==0.0.6",
+    "ultralytics",
+    "pandas==2.3.3",
+    "boto3==1.42.76",
+]
+
+[dependency-groups]
+dev = [
+    "black==24.8.0",
+    "isort==5.13.2",
+    "flake8==7.1.0",
+    "pylint==3.3.1",
+    "mypy==1.11.2",
+    "pytest==9.0.2",
+    "pytest-cov==7.0.0",
+    "httpx==0.28.1",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+
 [tool.black]
 line-length = 88
 target-version = ["py310", "py311"]
@@ -34,3 +67,6 @@ exclude = [
     "app/templates/index.html",
     ".gitignore"
 ]
+
+[tool.uv]
+default-groups = ["dev"]

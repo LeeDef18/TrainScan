@@ -18,13 +18,15 @@ jobs:
         with:
           python-version: "3.10"
 
-      - run: pip install -r requirements.txt
-      - run: pip install black isort flake8 pylint mypy
-      - run: black --check app tests
-      - run: isort --check-only app tests
-      - run: flake8 app tests
-      - run: pylint app --fail-under=8.0
-      - run: mypy app
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+
+      - run: uv sync --frozen --all-groups
+      - run: uv run black --check app tests
+      - run: uv run isort --check-only app tests
+      - run: uv run flake8 app tests
+      - run: uv run pylint app --fail-under=8.0
+      - run: uv run mypy app
 
   test:
     runs-on: ubuntu-latest
@@ -38,11 +40,13 @@ jobs:
         with:
           python-version: "3.10"
 
-      - run: pip install -r requirements.txt
-      - run: pip install pytest-cov httpx
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+
+      - run: uv sync --frozen --all-groups
 
       - name: Run tests
-        run: pytest --cov=app --cov-report=term-missing --cov-report=xml --cov-fail-under=70
+        run: uv run pytest --cov=app --cov-report=term-missing --cov-report=xml --cov-fail-under=70
 
       - name: Upload coverage artifact
         uses: actions/upload-artifact@v4

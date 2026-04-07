@@ -102,9 +102,9 @@ MODEL_IOU=0.45
 python -m venv .venv
 source .venv/bin/activate
 ```
-2. Установи зависимости.
+2. Установи зависимости через `uv`.
 ```bash
-pip install -r requirements.txt
+uv sync --all-groups
 ```
 3. Скопируй `.env.example` в `.env` и заполни параметры object storage.
 4. Запусти FastAPI.
@@ -117,7 +117,7 @@ uvicorn app.main:app --reload
 ```powershell
 python -m venv .venv
 .venv\Scripts\Activate.ps1
-pip install -r requirements.txt
+uv sync --all-groups
 uvicorn app.main:app --reload
 ```
 
@@ -185,23 +185,23 @@ curl -X POST "http://127.0.0.1:8000/predict" \
 Запуск unit-тестов:
 
 ```bash
-pytest -q
+uv run pytest -q
 ```
 
 Запуск тестов с покрытием:
 
 ```bash
-pytest --cov=app --cov-report=term-missing --cov-report=xml --cov-fail-under=70
+uv run pytest --cov=app --cov-report=term-missing --cov-report=xml --cov-fail-under=70
 ```
 
 Запуск проверок качества:
 
 ```bash
-black --check app tests
-isort --check-only app tests
-flake8 app tests
-pylint app --fail-under=8.0
-mypy app
+uv run black --check app tests
+uv run isort --check-only app tests
+uv run flake8 app tests
+uv run pylint app --fail-under=8.0
+uv run mypy app
 ```
 
 В GitHub Actions после тестов сохраняется artifact `coverage-report` с файлом `coverage.xml`.
@@ -238,3 +238,12 @@ docker run --rm -p 8000:8000 \
 - `docker` - проверка сборки Docker-образа
 
 Coverage-отчет сохраняется как artifact после job `test`.
+
+## Dependency Management
+
+Проект использует `uv` как основной менеджер зависимостей.
+
+- runtime и dev-зависимости описаны в `pyproject.toml`
+- lock-файл `uv.lock` фиксирует точные версии пакетов
+- локальная установка выполняется через `uv sync`
+- запуск команд внутри окружения выполняется через `uv run`
