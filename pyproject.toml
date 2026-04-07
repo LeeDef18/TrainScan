@@ -18,6 +18,13 @@ dependencies = [
     "uvicorn==0.24.0",
 ]
 
+[dependency-groups]
+dev = [
+    "pytest==9.0.2",
+    "black",
+    "isort",
+    "mypy",
+]
 
 
 [tool.black]
