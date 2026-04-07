@@ -44,7 +44,6 @@ dmypy.json
 .vscode
 
 .pre-commit-config.yaml
-main.py
 rule_table.csv
 images/
 
