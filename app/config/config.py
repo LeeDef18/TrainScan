@@ -27,11 +27,6 @@ class Settings(BaseSettings):
     conf: float = Field(default=0.25, alias="MODEL_CONF")
     iou: float = Field(default=0.45, alias="MODEL_IOU")
 
-    def __init__(self, **values):
-        if not values.get("_env_file"):
-            values["_env_file"] = None
-        super().__init__(**values)
-
 
 @lru_cache
 def get_settings() -> Settings:

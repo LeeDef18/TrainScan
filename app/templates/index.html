@@ -1,194 +1,626 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 
 <head>
-    <title>Детекция вагонов</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TrainScan</title>
     <style>
+        :root {
+            --bg: #f3efe6;
+            --surface: rgba(255, 250, 242, 0.92);
+            --surface-strong: #fffdf8;
+            --text: #1f1b16;
+            --muted: #6f665a;
+            --line: rgba(79, 63, 44, 0.14);
+            --accent: #8f4c2f;
+            --accent-dark: #6f361f;
+            --accent-soft: rgba(143, 76, 47, 0.1);
+            --ok: #2d7a50;
+            --bad: #a23f33;
+            --shadow: 0 18px 50px rgba(63, 44, 27, 0.14);
+            --radius-xl: 28px;
+            --radius-lg: 20px;
+            --radius-md: 14px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: Arial;
-            padding: 20px;
+            margin: 0;
+            min-height: 100vh;
+            font-family: Georgia, "Times New Roman", serif;
+            color: var(--text);
+            background:
+                radial-gradient(circle at top left, rgba(214, 168, 120, 0.28), transparent 28%),
+                radial-gradient(circle at bottom right, rgba(109, 76, 52, 0.15), transparent 26%),
+                linear-gradient(135deg, #efe4d1 0%, #f7f3ec 45%, #ece2d3 100%);
         }
 
-        .upload {
-            border: 2px dashed #007bff;
-            padding: 40px;
-            text-align: center;
-            margin: 20px 0;
-            cursor: pointer;
+        .page {
+            width: min(1180px, calc(100% - 32px));
+            margin: 32px auto;
         }
 
-        .images {
-            display: flex;
-            gap: 20px;
-            margin: 20px 0;
+        .hero {
+            display: grid;
+            gap: 28px;
+            grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr);
+            align-items: stretch;
         }
 
-        .image-box {
-            flex: 1;
-            border: 1px solid #ddd;
-            padding: 10px;
+        .panel {
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(14px);
         }
 
-        .image-box img {
-            width: 100%;
-            max-height: 400px;
-            object-fit: contain;
+        .intro {
+            padding: 34px;
+            position: relative;
+            overflow: hidden;
         }
 
-        button {
-            background: #007bff;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            cursor: pointer;
+        .intro::after {
+            content: "";
+            position: absolute;
+            inset: auto -80px -80px auto;
+            width: 220px;
+            height: 220px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(143, 76, 47, 0.18), transparent 68%);
+            pointer-events: none;
         }
 
-        .results {
-            background: #f5f5f5;
-            padding: 15px;
-            margin-top: 20px;
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 14px;
+            border-radius: 999px;
+            background: var(--accent-soft);
+            color: var(--accent-dark);
+            font-size: 13px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
         }
 
-        .A {
-            color: green;
-            font-weight: bold;
+        h1 {
+            margin: 18px 0 14px;
+            font-size: clamp(34px, 6vw, 56px);
+            line-height: 0.96;
+            letter-spacing: -0.04em;
         }
 
-        .B {
-            color: red;
-            font-weight: bold;
+        .lead {
+            margin: 0;
+            max-width: 62ch;
+            color: var(--muted);
+            font-size: 18px;
+            line-height: 1.7;
+        }
+
+        .intro-grid {
+            display: grid;
+            gap: 16px;
+            margin-top: 28px;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        }
+
+        .metric {
+            padding: 18px;
+            border-radius: var(--radius-lg);
+            border: 1px solid rgba(79, 63, 44, 0.1);
+            background: rgba(255, 255, 255, 0.48);
+        }
+
+        .metric span {
+            display: block;
+            color: var(--muted);
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .metric strong {
+            display: block;
+            margin-top: 10px;
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .workspace {
+            padding: 26px;
+            display: grid;
+            gap: 18px;
+        }
+
+        .section-title {
+            margin: 0;
+            font-size: 24px;
+        }
+
+        .section-text {
+            margin: 0;
+            color: var(--muted);
+            line-height: 1.6;
+        }
+
+        .control {
+            display: grid;
+            gap: 8px;
         }
 
         label {
-            font-weight: bold;
-            margin-right: 10px;
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--muted);
         }
 
-        #wagonInput {
-            padding: 5px;
-            width: 200px;
-            margin-bottom: 10px;
+        input[type="text"] {
+            width: 100%;
+            padding: 14px 16px;
+            border-radius: 14px;
+            border: 1px solid rgba(79, 63, 44, 0.18);
+            background: var(--surface-strong);
+            color: var(--text);
+            font: inherit;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: rgba(143, 76, 47, 0.55);
+            box-shadow: 0 0 0 4px rgba(143, 76, 47, 0.12);
+        }
+
+        .upload {
+            display: grid;
+            place-items: center;
+            gap: 12px;
+            min-height: 220px;
+            padding: 28px;
+            border-radius: var(--radius-lg);
+            border: 1.5px dashed rgba(143, 76, 47, 0.45);
+            background:
+                linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(249, 241, 228, 0.88));
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .upload:hover,
+        .upload.dragover {
+            transform: translateY(-2px);
+            border-color: var(--accent);
+            box-shadow: 0 12px 24px rgba(143, 76, 47, 0.12);
+        }
+
+        .upload-icon {
+            font-size: 34px;
+        }
+
+        .upload strong {
+            font-size: 20px;
+        }
+
+        .upload p {
+            margin: 0;
+            color: var(--muted);
+            line-height: 1.6;
+        }
+
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+        }
+
+        button {
+            border: none;
+            border-radius: 999px;
+            padding: 14px 24px;
+            font: inherit;
+            font-weight: 700;
+            cursor: pointer;
+            color: #fff8f2;
+            background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+            box-shadow: 0 12px 20px rgba(143, 76, 47, 0.22);
+            transition: transform 0.2s ease, opacity 0.2s ease;
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-1px);
+        }
+
+        button:disabled {
+            cursor: not-allowed;
+            opacity: 0.6;
+            transform: none;
+        }
+
+        .hint {
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .status {
+            padding: 14px 16px;
+            border-radius: 14px;
+            background: rgba(143, 76, 47, 0.08);
+            color: var(--accent-dark);
+            display: none;
+        }
+
+        .status.error {
+            background: rgba(162, 63, 51, 0.12);
+            color: var(--bad);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 22px;
+            margin-top: 24px;
+        }
+
+        .card {
+            padding: 20px;
+            border-radius: var(--radius-lg);
+            background: var(--surface);
+            border: 1px solid var(--line);
+            box-shadow: var(--shadow);
+        }
+
+        .card h3 {
+            margin: 0 0 14px;
+            font-size: 20px;
+        }
+
+        .image-box {
+            display: grid;
+            gap: 14px;
+        }
+
+        .image-frame {
+            display: grid;
+            place-items: center;
+            min-height: 340px;
+            border-radius: 18px;
+            border: 1px solid rgba(79, 63, 44, 0.12);
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.68), rgba(239, 230, 214, 0.7));
+            overflow: hidden;
+        }
+
+        .image-frame img {
+            width: 100%;
+            max-height: 420px;
+            object-fit: contain;
+        }
+
+        .image-placeholder {
+            color: var(--muted);
+            font-size: 15px;
+        }
+
+        .results {
+            display: none;
+            margin-top: 24px;
+            padding: 24px;
+            border-radius: var(--radius-xl);
+            background: var(--surface);
+            border: 1px solid var(--line);
+            box-shadow: var(--shadow);
+        }
+
+        .results-head {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            gap: 14px;
+            align-items: center;
+            margin-bottom: 18px;
+        }
+
+        .results-head h2 {
+            margin: 0;
+            font-size: 26px;
+        }
+
+        .results-meta {
+            color: var(--muted);
+        }
+
+        .orientation {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
+            border-radius: 999px;
+            font-weight: 700;
+        }
+
+        .orientation.A {
+            background: rgba(45, 122, 80, 0.12);
+            color: var(--ok);
+        }
+
+        .orientation.B {
+            background: rgba(162, 63, 51, 0.12);
+            color: var(--bad);
+        }
+
+        .predictions {
+            display: grid;
+            gap: 12px;
+            margin-top: 18px;
+        }
+
+        .prediction-item {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            align-items: center;
+            padding: 14px 16px;
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.6);
+            border: 1px solid rgba(79, 63, 44, 0.1);
+        }
+
+        .prediction-item strong {
+            font-size: 16px;
+        }
+
+        .prediction-item span {
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        @media (max-width: 960px) {
+            .hero,
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .page {
+                width: min(100% - 20px, 1180px);
+                margin: 20px auto;
+            }
+
+            .intro,
+            .workspace,
+            .results {
+                padding: 22px;
+            }
         }
     </style>
 </head>
 
 <body>
-    <h1>Детекция объектов вагонов</h1>
+    <main class="page">
+        <section class="hero">
+            <article class="panel intro">
+                <div class="eyebrow">TrainScan / Wagon Orientation</div>
+                <h1>Определение ориентации вагона по изображению</h1>
+                <p class="lead">
+                    Загрузите изображение вагона, укажите тип вагона и получите результат YOLO-детекции
+                    вместе с проверкой по таблице правил ориентации.
+                </p>
 
-    <div>
-        <label>Тип вагона:</label>
-        <input type="text" id="wagonInput" placeholder="Введите тип вагона">
-    </div>
+                <div class="intro-grid">
+                    <div class="metric">
+                        <span>Inference</span>
+                        <strong>YOLO</strong>
+                    </div>
+                    <div class="metric">
+                        <span>Decision Logic</span>
+                        <strong>Rule Engine</strong>
+                    </div>
+                    <div class="metric">
+                        <span>Output</span>
+                        <strong>A / B</strong>
+                    </div>
+                </div>
+            </article>
 
-    <div class="upload" onclick="document.getElementById('fileInput').click()">
-        📁 Загрузите фото вагона
-        <input type="file" id="fileInput" accept="image/*" style="display:none">
-    </div>
+            <section class="panel workspace">
+                <div>
+                    <h2 class="section-title">Загрузка изображения</h2>
+                    <p class="section-text">
+                        Форма отправляет изображение в API `/predict`, получает список найденных объектов
+                        и итоговую оценку ориентации вагона.
+                    </p>
+                </div>
 
-    <div id="preview" style="display:none">
-        <div class="images">
-            <div class="image-box">
+                <div class="control">
+                    <label for="wagonInput">Тип вагона</label>
+                    <input type="text" id="wagonInput" placeholder="Например: 19-752">
+                </div>
+
+                <div class="upload" id="dropArea" onclick="document.getElementById('fileInput').click()">
+                    <div class="upload-icon">&#128444;</div>
+                    <strong>Перетащите изображение сюда или нажмите для выбора</strong>
+                    <p>Поддерживаются изображения в формате JPG, JPEG и PNG.</p>
+                    <input type="file" id="fileInput" accept="image/*" hidden>
+                </div>
+
+                <div class="actions">
+                    <button id="analyzeButton" type="button" onclick="analyze()">Запустить анализ</button>
+                    <span class="hint">После выбора файла появится предпросмотр исходного изображения.</span>
+                </div>
+
+                <div id="status" class="status"></div>
+            </section>
+        </section>
+
+        <section id="preview" class="grid" style="display:none;">
+            <article class="card image-box">
                 <h3>Оригинал</h3>
-                <img id="origImg">
-            </div>
-            <div class="image-box">
-                <h3>Результат</h3>
-                <img id="resultImg">
-            </div>
-        </div>
-        <button onclick="analyze()">Анализировать</button>
-    </div>
+                <div class="image-frame">
+                    <img id="origImg" alt="Исходное изображение">
+                </div>
+            </article>
 
-    <div id="loading" style="display:none">Обработка...</div>
+            <article class="card image-box">
+                <h3>Результат детекции</h3>
+                <div class="image-frame">
+                    <img id="resultImg" alt="Результат детекции">
+                    <div id="resultPlaceholder" class="image-placeholder">Результат появится после анализа</div>
+                </div>
+            </article>
+        </section>
 
-    <div id="results" class="results" style="display:none">
-        <h3>Найдено объектов: <span id="count">0</span></h3>
-        <div id="predList"></div>
-        <div id="orientationResult"></div>
-    </div>
+        <section id="results" class="results">
+            <div class="results-head">
+                <div>
+                    <h2>Результат анализа</h2>
+                    <div class="results-meta">Найдено объектов: <span id="count">0</span></div>
+                </div>
+                <div id="orientationResult" class="orientation">Ориентация: -</div>
+            </div>
+
+            <div id="predList" class="predictions"></div>
+        </section>
+    </main>
 
     <script>
         let currentFile = null;
 
-        document.getElementById('fileInput').onchange = function (e) {
-            const file = e.target.files[0];
-            if (!file) return;
+        const fileInput = document.getElementById("fileInput");
+        const preview = document.getElementById("preview");
+        const results = document.getElementById("results");
+        const statusBox = document.getElementById("status");
+        const analyzeButton = document.getElementById("analyzeButton");
+        const dropArea = document.getElementById("dropArea");
+        const resultPlaceholder = document.getElementById("resultPlaceholder");
 
+        function setStatus(message, isError = false) {
+            statusBox.textContent = message;
+            statusBox.style.display = message ? "block" : "none";
+            statusBox.className = isError ? "status error" : "status";
+        }
+
+        function renderSelectedFile(file) {
             currentFile = file;
             const reader = new FileReader();
 
-            reader.onload = function (e) {
-                document.getElementById('origImg').src = e.target.result;
-                document.getElementById('preview').style.display = 'block';
-                document.getElementById('results').style.display = 'none';
+            reader.onload = function (event) {
+                document.getElementById("origImg").src = event.target.result;
+                document.getElementById("resultImg").removeAttribute("src");
+                resultPlaceholder.style.display = "block";
+                preview.style.display = "grid";
+                results.style.display = "none";
+                setStatus(`Файл выбран: ${file.name}`);
             };
 
             reader.readAsDataURL(file);
-        };
+        }
+
+        fileInput.addEventListener("change", function (event) {
+            const file = event.target.files[0];
+            if (!file) {
+                return;
+            }
+            renderSelectedFile(file);
+        });
 
         async function analyze() {
-            if (!currentFile) return;
-
-            const wagonType = document.getElementById('wagonInput').value.trim();
-            if (!wagonType) {
-                alert("Введите тип вагона!");
+            if (!currentFile) {
+                setStatus("Сначала выберите изображение вагона.", true);
                 return;
             }
 
-            const btn = document.querySelector('button');
-            btn.disabled = true;
-            document.getElementById('loading').style.display = 'block';
+            const wagonType = document.getElementById("wagonInput").value.trim();
+            if (!wagonType) {
+                setStatus("Введите тип вагона перед запуском анализа.", true);
+                return;
+            }
+
+            analyzeButton.disabled = true;
+            setStatus("Изображение отправлено в API. Выполняется анализ...");
 
             const formData = new FormData();
-            formData.append('file', currentFile);
-            formData.append('wagon_type', wagonType);
+            formData.append("file", currentFile);
+            formData.append("wagon_type", wagonType);
 
             try {
-                const response = await fetch('/predict', {
-                    method: 'POST',
-                    body: formData
+                const response = await fetch("/predict", {
+                    method: "POST",
+                    body: formData,
                 });
 
                 const result = await response.json();
 
-                if (result.success) {
-                    document.getElementById('resultImg').src = 'data:image/jpeg;base64,' + result.result_image;
-                    document.getElementById('count').textContent = result.count;
-
-                    const predList = document.getElementById('predList');
-                    predList.innerHTML = '';
-                    result.predictions.forEach(pred => {
-                        const div = document.createElement('div');
-                        div.textContent = `${pred.class_name} - ${(pred.confidence * 100).toFixed(1)}%`;
-                        predList.appendChild(div);
-                    });
-
-                    const orientationDiv = document.getElementById('orientationResult');
-                    orientationDiv.innerHTML = `<strong>Ориентация вагона:</strong> ${result.orientation_check}`;
-                    orientationDiv.className = result.orientation_check === "A" ? "A" : "B";
-
-                    document.getElementById('results').style.display = 'block';
-                } else {
-                    alert('Ошибка: ' + result.error);
+                if (!response.ok || !result.success) {
+                    throw new Error(result.detail || result.error || "Ошибка обработки изображения.");
                 }
-            } catch (err) {
-                alert('Ошибка сети: ' + err.message);
+
+                document.getElementById("resultImg").src = "data:image/jpeg;base64," + result.result_image;
+                resultPlaceholder.style.display = "none";
+                document.getElementById("count").textContent = result.count;
+
+                const predList = document.getElementById("predList");
+                predList.innerHTML = "";
+
+                if (!result.predictions.length) {
+                    const emptyState = document.createElement("div");
+                    emptyState.className = "prediction-item";
+                    emptyState.innerHTML = "<strong>Объекты не найдены</strong><span>Модель не вернула детекций для этого изображения.</span>";
+                    predList.appendChild(emptyState);
+                } else {
+                    result.predictions.forEach((prediction, index) => {
+                        const item = document.createElement("div");
+                        item.className = "prediction-item";
+                        item.innerHTML = `
+                            <div>
+                                <strong>${index + 1}. ${prediction.class_name}</strong>
+                                <span>bbox: [${prediction.bbox_int.join(", ")}]</span>
+                            </div>
+                            <strong>${(prediction.confidence * 100).toFixed(1)}%</strong>
+                        `;
+                        predList.appendChild(item);
+                    });
+                }
+
+                const orientationDiv = document.getElementById("orientationResult");
+                orientationDiv.textContent = `Ориентация: ${result.orientation_check}`;
+                orientationDiv.className = `orientation ${result.orientation_check === "A" ? "A" : "B"}`;
+
+                results.style.display = "block";
+                setStatus("Анализ завершен успешно.");
+            } catch (error) {
+                setStatus(`Ошибка: ${error.message}`, true);
             } finally {
-                btn.disabled = false;
-                document.getElementById('loading').style.display = 'none';
+                analyzeButton.disabled = false;
             }
         }
 
-        const dropArea = document.querySelector('.upload');
-        dropArea.addEventListener('drop', e => {
-            e.preventDefault();
-            const file = e.dataTransfer.files[0];
-            if (file) {
-                document.getElementById('fileInput').files = e.dataTransfer.files;
-                document.getElementById('fileInput').dispatchEvent(new Event('change'));
-            }
+        dropArea.addEventListener("dragover", function (event) {
+            event.preventDefault();
+            dropArea.classList.add("dragover");
         });
-        dropArea.addEventListener('dragover', e => e.preventDefault());
+
+        dropArea.addEventListener("dragleave", function () {
+            dropArea.classList.remove("dragover");
+        });
+
+        dropArea.addEventListener("drop", function (event) {
+            event.preventDefault();
+            dropArea.classList.remove("dragover");
+
+            const file = event.dataTransfer.files[0];
+            if (!file) {
+                return;
+            }
+
+            fileInput.files = event.dataTransfer.files;
+            renderSelectedFile(file);
+        });
     </script>
 </body>
 

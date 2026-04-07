@@ -1,4 +1,4 @@
-from app.config.config import Settings, get_settings
+from app.config.config import get_settings
 from app.infrastructure.repositories.csv_orientation_rules_repository import (
     CsvOrientationRulesRepository,
 )
@@ -33,6 +33,8 @@ def test_get_settings_reads_environment(monkeypatch):
     monkeypatch.setenv("RULE_TABLE_PATH", "rules.csv")
     monkeypatch.setenv("RULE_TABLE_BUCKET", "rules-bucket")
     monkeypatch.setenv("S3_ENDPOINT", "https://example.com")
+    monkeypatch.delenv("S3_KEY", raising=False)
+    monkeypatch.delenv("S3_SECRET", raising=False)
     monkeypatch.setenv("MODEL_KEY", "weights.pt")
     monkeypatch.setenv("RULE_TABLE_KEY", "orientation.csv")
     monkeypatch.setenv("MODEL_CONF", "0.5")
@@ -40,20 +42,15 @@ def test_get_settings_reads_environment(monkeypatch):
 
     settings = get_settings()
 
-    assert settings == Settings(
-        model_path="custom-model.pt",
-        model_bucket="model-bucket",
-        rule_table_path="rules.csv",
-        rule_table_bucket="rules-bucket",
-        s3_endpoint="https://example.com",
-        s3_key=None,
-        s3_secret=None,
-        model_key="weights.pt",
-        rule_table_key="orientation.csv",
-        conf=0.5,
-        iou=0.6,
-        _env_file=None,
-    )
+    assert settings.model_path == "custom-model.pt"
+    assert settings.model_bucket == "model-bucket"
+    assert settings.rule_table_path == "rules.csv"
+    assert settings.rule_table_bucket == "rules-bucket"
+    assert settings.s3_endpoint == "https://example.com"
+    assert settings.model_key == "weights.pt"
+    assert settings.rule_table_key == "orientation.csv"
+    assert settings.conf == 0.5
+    assert settings.iou == 0.6
 
     get_settings.cache_clear()
 

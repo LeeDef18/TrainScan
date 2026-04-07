@@ -1,6 +1,9 @@
 import io
+from pathlib import Path
 
-from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
 from PIL import Image, UnidentifiedImageError
 
 from app.application.dto.prediction_response import PredictionResponse
@@ -20,6 +23,9 @@ from app.infrastructure.storage.file_downloader import FileDownloader
 from app.infrastructure.storage.s3_client import S3Client
 
 router = APIRouter()
+templates = Jinja2Templates(
+    directory=str(Path(__file__).resolve().parents[2] / "templates")
+)
 
 
 def build_predict_use_case() -> PredictUseCase:
@@ -49,7 +55,17 @@ def build_predict_use_case() -> PredictUseCase:
 use_case = build_predict_use_case()
 
 
-@router.post("/predict")
+@router.get("/", response_class=HTMLResponse, tags=["ui"])
+async def home(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
+
+
+@router.get("/health", tags=["service"])
+async def healthcheck():
+    return {"status": "ok"}
+
+
+@router.post("/predict", tags=["prediction"])
 async def predict(file: UploadFile = File(...), wagon_type: str = Form(...)):
     image_bytes = await file.read()
 
