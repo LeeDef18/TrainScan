@@ -59,6 +59,12 @@ docker compose up -d airflow-webserver airflow-scheduler
 
 После этого UI Airflow будет доступен на `http://127.0.0.1:8080`.
 
+Учетные данные администратора Airflow больше не захардкожены в compose-файле и читаются из `.env`:
+
+- `AIRFLOW_ADMIN_USERNAME`
+- `AIRFLOW_ADMIN_PASSWORD`
+- `AIRFLOW_ADMIN_EMAIL`
+
 Если в UI не открываются логи, можно посмотреть их напрямую:
 
 ```bash

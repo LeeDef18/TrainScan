@@ -242,6 +242,21 @@ docker run --rm -p 8000:8000 \
 
 Coverage-отчет сохраняется как artifact после job `test`.
 
+Для GitHub Settings -> Secrets and variables -> Actions рекомендуется добавить:
+
+- `Secrets`
+  - `S3_KEY`
+  - `S3_SECRET`
+  - `AIRFLOW_ADMIN_PASSWORD`
+- `Variables`
+  - `S3_ENDPOINT`
+  - `MODEL_BUCKET`
+  - `MODEL_KEY`
+  - `RULE_TABLE_BUCKET`
+  - `RULE_TABLE_KEY`
+  - `AIRFLOW_ADMIN_USERNAME`
+  - `AIRFLOW_ADMIN_EMAIL`
+
 ## Airflow DAG
 
 В проект добавлен orchestration-слой `orchestration/airflow/`.
