@@ -1,20 +1,25 @@
 docs/
 images/
+tests/
+.github/
 
 __pycache__/
 *.pyc
 *.pyo
+.pytest_cache/
+.mypy_cache/
+.venv/
+venv/
 
-.git
+.git/
 .gitignore
-
-.mypy_cache
-.venv
 
 .flake8
 .pylintrc
-pyproject.toml
-
-main.py
+.pre-commit-config.yaml
 
 *.log
+orchestration/airflow/logs/
+orchestration/airflow/data/output/
+
+.env
