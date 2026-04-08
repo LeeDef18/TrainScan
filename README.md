@@ -107,6 +107,9 @@ source .venv/bin/activate
 uv sync --all-groups
 ```
 3. Скопируй `.env.example` в `.env` и заполни параметры object storage.
+```bash
+cp .env.example .env
+```
 4. Запусти FastAPI.
 ```bash
 uvicorn app.main:app --reload
