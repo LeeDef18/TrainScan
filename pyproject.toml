@@ -11,13 +11,15 @@ dependencies = [
     "pillow==10.1.0",
     "numpy==1.24.3",
     "python-multipart==0.0.6",
-    "ultralytics",
+    "ultralytics==8.3.241",
     "pandas==2.3.3",
     "boto3==1.42.76",
 ]
 
 [dependency-groups]
 dev = [
+    "apache-airflow==2.10.0",
+    "apache-airflow-providers-docker==3.11.0",
     "black==24.8.0",
     "isort==5.13.2",
     "flake8==7.1.0",
@@ -26,10 +28,12 @@ dev = [
     "pytest==9.0.2",
     "pytest-cov==7.0.0",
     "httpx==0.28.1",
+    "requests==2.32.3",
 ]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
+norecursedirs = ["orchestration/airflow/logs", "orchestration/airflow/data/output"]
 
 [tool.black]
 line-length = 88

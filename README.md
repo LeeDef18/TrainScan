@@ -239,6 +239,39 @@ docker run --rm -p 8000:8000 \
 
 Coverage-отчет сохраняется как artifact после job `test`.
 
+## Airflow DAG
+
+В проект добавлен orchestration-слой `orchestration/airflow/`.
+
+Что он показывает:
+
+- использование `DockerOperator`
+- вызов уже работающего TrainScan API
+- идемпотентную запись результата по `execution_date`
+- возможность backfill для нескольких дат
+- отдельный runtime Airflow как внешнего orchestration-сервиса
+
+Логика DAG:
+
+1. Берет тестовое изображение из `orchestration/airflow/data/input/`
+2. Запускает контейнер через `DockerOperator`
+3. Контейнер вызывает `POST /predict`
+4. Результат сохраняется в `orchestration/airflow/data/output/<ds>_prediction.json`
+
+Идемпотентность:
+
+- если файл результата для даты уже существует, повторный запуск не выполняет API-запрос повторно
+
+Тестовый входной файл для DAG лежит в `orchestration/airflow/data/input/sample_wagon.jpg`.
+
+Backfill пример:
+
+```bash
+airflow dags backfill wagon_orientation_pipeline --start-date 2026-04-01 --end-date 2026-04-03
+```
+
+Airflow запускается как отдельный сервис и не встраивается в `app/`, чтобы не смешивать orchestration и бизнес-логику.
+
 ## Dependency Management
 
 Проект использует `uv` как основной менеджер зависимостей.

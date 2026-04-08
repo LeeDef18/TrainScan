@@ -1,0 +1,66 @@
+exclude: '^(docs/|api\.py$)'
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+      - id: check-merge-conflict
+      - id: debug-statements
+
+  - repo: https://github.com/pycqa/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+        name: isort (python)
+        args: ["--profile", "black", "--filter-files"]
+
+  - repo: https://github.com/psf/black
+    rev: 24.8.0
+    hooks:
+      - id: black
+        language_version: python3
+
+  - repo: https://github.com/pycqa/flake8
+    rev: 7.1.0
+    hooks:
+      - id: flake8
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.11.2
+    hooks:
+      - id: mypy
+        additional_dependencies: [
+          'types-requests',
+          'types-PyYAML',
+          'types-setuptools',
+        ]
+        args: [
+          "--ignore-missing-imports",
+          "--no-strict-optional",
+          "--warn-no-return",
+          "--warn-redundant-casts",
+          "--warn-unused-ignores"
+        ]
+        exclude: "tests/|docs/|venv/|.venv/|app/templates/"
+
+  - repo: https://github.com/pylint-dev/pylint
+    rev: v3.3.1
+    hooks:
+      - id: pylint
+        name: pylint
+        additional_dependencies:
+          - fastapi==0.104.1
+          - pydantic-settings==2.10.1
+          - pillow==10.1.0
+          - numpy==1.24.3
+          - pandas==2.3.3
+          - boto3==1.42.76
+          - opencv-python-headless==4.8.1.78
+          - ultralytics
+          - uvicorn==0.24.0
+        types: [python]
+        args: ["--rcfile=.pylintrc"]
+        exclude: "tests/|docs/|app/templates/|api.py|orchestration/airflow/"

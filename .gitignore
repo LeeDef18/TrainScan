@@ -43,10 +43,12 @@ dmypy.json
 .abstra/
 .vscode
 
-.pre-commit-config.yaml
+
 rule_table.csv
 images/
 
 model/*.pt
 .dockerignore
-api.py
+
+orchestration/airflow/logs/
+orchestration/airflow/data/output/
