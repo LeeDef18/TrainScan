@@ -120,6 +120,12 @@ jobs:
             LOG_LEVEL=${{ vars.LOG_LEVEL || 'INFO' }}
             APP_HOST=0.0.0.0
             APP_PORT=${{ vars.APP_PORT || '8000' }}
+            AIRFLOW_BASE_URL=${{ vars.AIRFLOW_BASE_URL || 'http://139.100.195.58/airflow' }}
+            TRAINSCAN_API_URL=${{ vars.TRAINSCAN_API_URL || 'http://nginx' }}
+            AIRFLOW_DB_PASSWORD=${{ secrets.AIRFLOW_DB_PASSWORD }}
+            AIRFLOW_ADMIN_USERNAME=${{ vars.AIRFLOW_ADMIN_USERNAME }}
+            AIRFLOW_ADMIN_PASSWORD=${{ secrets.AIRFLOW_ADMIN_PASSWORD }}
+            AIRFLOW_ADMIN_EMAIL=${{ vars.AIRFLOW_ADMIN_EMAIL }}
             MODEL_PATH=${{ vars.MODEL_PATH }}
             MODEL_BUCKET=${{ vars.MODEL_BUCKET }}
             MODEL_KEY=${{ vars.MODEL_KEY }}
@@ -131,6 +137,132 @@ jobs:
             S3_SECRET=${{ secrets.S3_SECRET }}
             MODEL_CONF=${{ vars.MODEL_CONF }}
             MODEL_IOU=${{ vars.MODEL_IOU }}
+            EOF
+            mkdir -p ${{ vars.SELECTEL_APP_DIR }}/airflow
+            cat > ${{ vars.SELECTEL_APP_DIR }}/airflow/docker-compose.yml <<'EOF'
+            services:
+              airflow-postgres:
+                image: postgres:16
+                container_name: trainscan-airflow-postgres
+                restart: unless-stopped
+                environment:
+                  POSTGRES_USER: airflow
+                  POSTGRES_PASSWORD: ${{ secrets.AIRFLOW_DB_PASSWORD }}
+                  POSTGRES_DB: airflow
+                volumes:
+                  - airflow-postgres-data:/var/lib/postgresql/data
+                healthcheck:
+                  test: ["CMD-SHELL", "pg_isready -U airflow -d airflow"]
+                  interval: 10s
+                  timeout: 5s
+                  retries: 5
+
+              airflow-init:
+                image: apache/airflow:2.10.0
+                container_name: trainscan-airflow-init
+                restart: "no"
+                depends_on:
+                  airflow-postgres:
+                    condition: service_healthy
+                env_file:
+                  - ../.env
+                environment:
+                  AIRFLOW_HOME: /opt/airflow
+                  AIRFLOW__CORE__EXECUTOR: LocalExecutor
+                  AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+                  AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:${{ secrets.AIRFLOW_DB_PASSWORD }}@airflow-postgres:5432/airflow
+                  AIRFLOW__CORE__HOSTNAME_CALLABLE: socket.getfqdn
+                  AIRFLOW__WEBSERVER__BASE_URL: ${{ vars.AIRFLOW_BASE_URL || 'http://139.100.195.58/airflow' }}
+                  AIRFLOW__WEBSERVER__ENABLE_PROXY_FIX: "true"
+                  AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "true"
+                  AIRFLOW__LOGGING__BASE_LOG_FOLDER: /opt/airflow/logs
+                  AIRFLOW__LOGGING__REMOTE_LOGGING: "false"
+                  AIRFLOW_ADMIN_USERNAME: ${{ vars.AIRFLOW_ADMIN_USERNAME }}
+                  AIRFLOW_ADMIN_PASSWORD: ${{ secrets.AIRFLOW_ADMIN_PASSWORD }}
+                  AIRFLOW_ADMIN_EMAIL: ${{ vars.AIRFLOW_ADMIN_EMAIL }}
+                  TRAINSCAN_API_URL: ${{ vars.TRAINSCAN_API_URL || 'http://nginx' }}
+                volumes:
+                  - ../project/orchestration/airflow/dags:/opt/airflow/dags
+                  - ../project/orchestration/airflow/data:/opt/project/orchestration/airflow/data
+                  - airflow-logs:/opt/airflow/logs
+                  - ../project:/opt/project
+                command: >
+                  bash -c "
+                  airflow db migrate &&
+                  airflow users create
+                  --username $${AIRFLOW_ADMIN_USERNAME}
+                  --password $${AIRFLOW_ADMIN_PASSWORD}
+                  --firstname Air
+                  --lastname Flow
+                  --role Admin
+                  --email $${AIRFLOW_ADMIN_EMAIL}
+                  "
+
+              airflow-webserver:
+                image: apache/airflow:2.10.0
+                container_name: trainscan-airflow-webserver
+                restart: unless-stopped
+                depends_on:
+                  airflow-postgres:
+                    condition: service_healthy
+                  airflow-init:
+                    condition: service_completed_successfully
+                env_file:
+                  - ../.env
+                environment:
+                  AIRFLOW_HOME: /opt/airflow
+                  AIRFLOW__CORE__EXECUTOR: LocalExecutor
+                  AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+                  AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:${{ secrets.AIRFLOW_DB_PASSWORD }}@airflow-postgres:5432/airflow
+                  AIRFLOW__CORE__HOSTNAME_CALLABLE: socket.getfqdn
+                  AIRFLOW__WEBSERVER__BASE_URL: ${{ vars.AIRFLOW_BASE_URL || 'http://139.100.195.58/airflow' }}
+                  AIRFLOW__WEBSERVER__ENABLE_PROXY_FIX: "true"
+                  AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "true"
+                  AIRFLOW__LOGGING__BASE_LOG_FOLDER: /opt/airflow/logs
+                  AIRFLOW__LOGGING__REMOTE_LOGGING: "false"
+                  TRAINSCAN_API_URL: ${{ vars.TRAINSCAN_API_URL || 'http://nginx' }}
+                volumes:
+                  - ../project/orchestration/airflow/dags:/opt/airflow/dags
+                  - ../project/orchestration/airflow/data:/opt/project/orchestration/airflow/data
+                  - airflow-logs:/opt/airflow/logs
+                  - ../project:/opt/project
+                  - /var/run/docker.sock:/var/run/docker.sock
+                command: webserver
+
+              airflow-scheduler:
+                image: apache/airflow:2.10.0
+                container_name: trainscan-airflow-scheduler
+                restart: unless-stopped
+                depends_on:
+                  airflow-postgres:
+                    condition: service_healthy
+                  airflow-init:
+                    condition: service_completed_successfully
+                env_file:
+                  - ../.env
+                environment:
+                  AIRFLOW_HOME: /opt/airflow
+                  AIRFLOW__CORE__EXECUTOR: LocalExecutor
+                  AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+                  AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:${{ secrets.AIRFLOW_DB_PASSWORD }}@airflow-postgres:5432/airflow
+                  AIRFLOW__CORE__HOSTNAME_CALLABLE: socket.getfqdn
+                  AIRFLOW__WEBSERVER__BASE_URL: ${{ vars.AIRFLOW_BASE_URL || 'http://139.100.195.58/airflow' }}
+                  AIRFLOW__WEBSERVER__ENABLE_PROXY_FIX: "true"
+                  AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "true"
+                  AIRFLOW__LOGGING__BASE_LOG_FOLDER: /opt/airflow/logs
+                  AIRFLOW__LOGGING__REMOTE_LOGGING: "false"
+                  TRAINSCAN_API_URL: ${{ vars.TRAINSCAN_API_URL || 'http://nginx' }}
+                volumes:
+                  - ../project/orchestration/airflow/dags:/opt/airflow/dags
+                  - ../project/orchestration/airflow/data:/opt/project/orchestration/airflow/data
+                  - airflow-logs:/opt/airflow/logs
+                  - ../project:/opt/project
+                  - /var/run/docker.sock:/var/run/docker.sock
+                command: scheduler
+
+            volumes:
+              airflow-postgres-data:
+              airflow-logs:
             EOF
             cat > ${{ vars.SELECTEL_APP_DIR }}/docker-compose.yml <<'EOF'
             services:
@@ -167,6 +299,23 @@ jobs:
 
                 client_max_body_size 20m;
 
+                location = /airflow {
+                    return 301 /airflow/;
+                }
+
+                location /airflow/ {
+                    proxy_pass http://airflow-webserver:8080/;
+                    proxy_http_version 1.1;
+                    proxy_set_header Host $host;
+                    proxy_set_header X-Real-IP $remote_addr;
+                    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                    proxy_set_header X-Forwarded-Proto $scheme;
+                    proxy_set_header X-Forwarded-Prefix /airflow;
+                    proxy_read_timeout 300s;
+                    proxy_connect_timeout 60s;
+                    proxy_send_timeout 300s;
+                }
+
                 location / {
                     proxy_pass http://trainscan:8000;
                     proxy_http_version 1.1;
@@ -183,4 +332,7 @@ jobs:
             docker login ${{ env.REGISTRY }} -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
             docker compose -f ${{ vars.SELECTEL_APP_DIR }}/docker-compose.yml pull
             docker compose -f ${{ vars.SELECTEL_APP_DIR }}/docker-compose.yml up -d
+            mkdir -p ${{ vars.SELECTEL_APP_DIR }}/project
+            rsync -av --delete --exclude '.git' --exclude '.venv' --exclude '__pycache__' --exclude '.pytest_cache' --exclude '.mypy_cache' --exclude '.ruff_cache' ./ ${{ vars.SELECTEL_APP_DIR }}/project/
+            docker compose -f ${{ vars.SELECTEL_APP_DIR }}/airflow/docker-compose.yml up -d
             docker image prune -f

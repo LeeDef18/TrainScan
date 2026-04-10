@@ -262,6 +262,8 @@ Coverage-отчет сохраняется как artifact после job `test`
   - `SELECTEL_VPS_SSH_KEY`
   - `S3_KEY`
   - `S3_SECRET`
+  - `AIRFLOW_DB_PASSWORD`
+  - `AIRFLOW_ADMIN_PASSWORD`
   - `AIRFLOW_ADMIN_PASSWORD`
 - `Variables`
   - `SELECTEL_VPS_HOST`
@@ -279,6 +281,8 @@ Coverage-отчет сохраняется как artifact после job `test`
   - `APP_PORT`
   - `LOG_LEVEL`
   - `SELECTEL_APP_DIR`
+  - `AIRFLOW_BASE_URL`
+  - `TRAINSCAN_API_URL`
   - `AIRFLOW_ADMIN_USERNAME`
   - `AIRFLOW_ADMIN_EMAIL`
 

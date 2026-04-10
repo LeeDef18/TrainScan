@@ -41,6 +41,8 @@ scp -r deploy/nginx <user>@<host>:/opt/trainscan/
 - `SELECTEL_VPS_SSH_KEY`
 - `S3_KEY`
 - `S3_SECRET`
+- `AIRFLOW_DB_PASSWORD`
+- `AIRFLOW_ADMIN_PASSWORD`
 
 ## GitHub Variables
 
@@ -59,5 +61,21 @@ scp -r deploy/nginx <user>@<host>:/opt/trainscan/
 - `S3_ENDPOINT`
 - `MODEL_CONF`
 - `MODEL_IOU`
+- `AIRFLOW_BASE_URL`
+- `TRAINSCAN_API_URL`
+- `AIRFLOW_ADMIN_USERNAME`
+- `AIRFLOW_ADMIN_EMAIL`
 
 Рекомендуемое значение `SELECTEL_APP_DIR`: `/opt/trainscan`
+
+## Airflow на VPS
+
+Airflow деплоится отдельным compose-файлом в `${SELECTEL_APP_DIR}/airflow/docker-compose.yml` и публикуется наружу через основной `Nginx`.
+
+После деплоя UI будет доступен по адресу:
+
+```text
+http://<server-ip>/airflow/
+```
+
+Для внешнего доступа достаточно открыть inbound порт `80` в группе безопасности сервера. Порт `8080` наружу открывать не нужно.

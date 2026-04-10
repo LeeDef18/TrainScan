@@ -1,14 +1,14 @@
 services:
-  postgres:
+  airflow-postgres:
     image: postgres:16
     container_name: trainscan-airflow-postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: airflow
-      POSTGRES_PASSWORD: airflow
+      POSTGRES_PASSWORD: ${AIRFLOW_DB_PASSWORD}
       POSTGRES_DB: airflow
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - airflow-postgres-data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U airflow -d airflow"]
       interval: 10s
@@ -18,30 +18,32 @@ services:
   airflow-init:
     image: apache/airflow:2.10.0
     container_name: trainscan-airflow-init
+    restart: "no"
     depends_on:
-      postgres:
+      airflow-postgres:
         condition: service_healthy
     env_file:
-      - ../../../.env
+      - ../.env
     environment:
       AIRFLOW_HOME: /opt/airflow
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:${AIRFLOW_DB_PASSWORD}@airflow-postgres:5432/airflow
       AIRFLOW__CORE__HOSTNAME_CALLABLE: socket.getfqdn
-      AIRFLOW__WEBSERVER__BASE_URL: ${AIRFLOW_BASE_URL:-http://127.0.0.1:8080}
+      AIRFLOW__WEBSERVER__BASE_URL: ${AIRFLOW_BASE_URL}
+      AIRFLOW__WEBSERVER__ENABLE_PROXY_FIX: "true"
       AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "true"
       AIRFLOW__LOGGING__BASE_LOG_FOLDER: /opt/airflow/logs
       AIRFLOW__LOGGING__REMOTE_LOGGING: "false"
       AIRFLOW_ADMIN_USERNAME: ${AIRFLOW_ADMIN_USERNAME}
       AIRFLOW_ADMIN_PASSWORD: ${AIRFLOW_ADMIN_PASSWORD}
-      AIRFLOW_ADMIN_EMAIL: ${AIRFLOW_ADMIN_EMAIL:-admin@example.com}
-      TRAINSCAN_API_URL: ${TRAINSCAN_API_URL:-http://nginx}
+      AIRFLOW_ADMIN_EMAIL: ${AIRFLOW_ADMIN_EMAIL}
+      TRAINSCAN_API_URL: ${TRAINSCAN_API_URL}
     volumes:
-      - ../dags:/opt/airflow/dags
-      - ../data:/opt/project/orchestration/airflow/data
-      - ../logs:/opt/airflow/logs
-      - ../../../:/opt/project
+      - ../project/orchestration/airflow/dags:/opt/airflow/dags
+      - ../project/orchestration/airflow/data:/opt/project/orchestration/airflow/data
+      - airflow-logs:/opt/airflow/logs
+      - ../project:/opt/project
     command: >
       bash -c "
       airflow db migrate &&
@@ -51,7 +53,7 @@ services:
       --firstname Air
       --lastname Flow
       --role Admin
-      --email $${AIRFLOW_ADMIN_EMAIL:-admin@example.com}
+      --email $${AIRFLOW_ADMIN_EMAIL}
       "
 
   airflow-webserver:
@@ -59,30 +61,29 @@ services:
     container_name: trainscan-airflow-webserver
     restart: unless-stopped
     depends_on:
-      postgres:
+      airflow-postgres:
         condition: service_healthy
       airflow-init:
         condition: service_completed_successfully
     env_file:
-      - ../../../.env
+      - ../.env
     environment:
       AIRFLOW_HOME: /opt/airflow
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:${AIRFLOW_DB_PASSWORD}@airflow-postgres:5432/airflow
       AIRFLOW__CORE__HOSTNAME_CALLABLE: socket.getfqdn
-      AIRFLOW__WEBSERVER__BASE_URL: ${AIRFLOW_BASE_URL:-http://127.0.0.1:8080}
+      AIRFLOW__WEBSERVER__BASE_URL: ${AIRFLOW_BASE_URL}
+      AIRFLOW__WEBSERVER__ENABLE_PROXY_FIX: "true"
       AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "true"
       AIRFLOW__LOGGING__BASE_LOG_FOLDER: /opt/airflow/logs
       AIRFLOW__LOGGING__REMOTE_LOGGING: "false"
-      TRAINSCAN_API_URL: ${TRAINSCAN_API_URL:-http://nginx}
-    ports:
-      - "8080:8080"
+      TRAINSCAN_API_URL: ${TRAINSCAN_API_URL}
     volumes:
-      - ../dags:/opt/airflow/dags
-      - ../data:/opt/project/orchestration/airflow/data
-      - ../logs:/opt/airflow/logs
-      - ../../../:/opt/project
+      - ../project/orchestration/airflow/dags:/opt/airflow/dags
+      - ../project/orchestration/airflow/data:/opt/project/orchestration/airflow/data
+      - airflow-logs:/opt/airflow/logs
+      - ../project:/opt/project
       - /var/run/docker.sock:/var/run/docker.sock
     command: webserver
 
@@ -91,30 +92,32 @@ services:
     container_name: trainscan-airflow-scheduler
     restart: unless-stopped
     depends_on:
-      postgres:
+      airflow-postgres:
         condition: service_healthy
       airflow-init:
         condition: service_completed_successfully
     env_file:
-      - ../../../.env
+      - ../.env
     environment:
       AIRFLOW_HOME: /opt/airflow
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:${AIRFLOW_DB_PASSWORD}@airflow-postgres:5432/airflow
       AIRFLOW__CORE__HOSTNAME_CALLABLE: socket.getfqdn
-      AIRFLOW__WEBSERVER__BASE_URL: ${AIRFLOW_BASE_URL:-http://127.0.0.1:8080}
+      AIRFLOW__WEBSERVER__BASE_URL: ${AIRFLOW_BASE_URL}
+      AIRFLOW__WEBSERVER__ENABLE_PROXY_FIX: "true"
       AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "true"
       AIRFLOW__LOGGING__BASE_LOG_FOLDER: /opt/airflow/logs
       AIRFLOW__LOGGING__REMOTE_LOGGING: "false"
-      TRAINSCAN_API_URL: ${TRAINSCAN_API_URL:-http://nginx}
+      TRAINSCAN_API_URL: ${TRAINSCAN_API_URL}
     volumes:
-      - ../dags:/opt/airflow/dags
-      - ../data:/opt/project/orchestration/airflow/data
-      - ../logs:/opt/airflow/logs
-      - ../../../:/opt/project
+      - ../project/orchestration/airflow/dags:/opt/airflow/dags
+      - ../project/orchestration/airflow/data:/opt/project/orchestration/airflow/data
+      - airflow-logs:/opt/airflow/logs
+      - ../project:/opt/project
       - /var/run/docker.sock:/var/run/docker.sock
     command: scheduler
 
 volumes:
-  postgres-data:
+  airflow-postgres-data:
+  airflow-logs:
