@@ -36,7 +36,7 @@ with DAG(
             f'{API_URL} {INPUT_IMAGE} 19-752 {OUTPUT_FILE}"'
         ),
         docker_url="unix://var/run/docker.sock",
-        network_mode="trainscan_default",
+        network_mode="trainscan-shared",
         mount_tmp_dir=False,
         mounts=[
             Mount(
