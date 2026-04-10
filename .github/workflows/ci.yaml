@@ -195,10 +195,10 @@ jobs:
                   AIRFLOW_ADMIN_EMAIL: ${{ vars.AIRFLOW_ADMIN_EMAIL }}
                   TRAINSCAN_API_URL: ${{ vars.TRAINSCAN_API_URL || 'http://nginx' }}
                 volumes:
-                  - ../project/orchestration/airflow/dags:/opt/airflow/dags
-                  - ../project/orchestration/airflow/data:/opt/project/orchestration/airflow/data
+                  - /opt/trainscan/project/orchestration/airflow/dags:/opt/airflow/dags
+                  - /opt/trainscan/project/orchestration/airflow/data:/opt/project/orchestration/airflow/data
                   - airflow-logs:/opt/airflow/logs
-                  - ../project:/opt/project
+                  - /opt/trainscan/project:/opt/project
                 networks:
                   - airflow-internal
                   - trainscan-shared
@@ -237,10 +237,10 @@ jobs:
                   AIRFLOW__LOGGING__REMOTE_LOGGING: "false"
                   TRAINSCAN_API_URL: ${{ vars.TRAINSCAN_API_URL || 'http://nginx' }}
                 volumes:
-                  - ../project/orchestration/airflow/dags:/opt/airflow/dags
-                  - ../project/orchestration/airflow/data:/opt/project/orchestration/airflow/data
+                  - /opt/trainscan/project/orchestration/airflow/dags:/opt/airflow/dags
+                  - /opt/trainscan/project/orchestration/airflow/data:/opt/project/orchestration/airflow/data
                   - airflow-logs:/opt/airflow/logs
-                  - ../project:/opt/project
+                  - /opt/trainscan/project:/opt/project
                   - /var/run/docker.sock:/var/run/docker.sock
                 command: webserver
                 ports:
@@ -272,10 +272,10 @@ jobs:
                   AIRFLOW__LOGGING__REMOTE_LOGGING: "false"
                   TRAINSCAN_API_URL: ${{ vars.TRAINSCAN_API_URL || 'http://nginx' }}
                 volumes:
-                  - ../project/orchestration/airflow/dags:/opt/airflow/dags
-                  - ../project/orchestration/airflow/data:/opt/project/orchestration/airflow/data
+                  - /opt/trainscan/project/orchestration/airflow/dags:/opt/airflow/dags
+                  - /opt/trainscan/project/orchestration/airflow/data:/opt/project/orchestration/airflow/data
                   - airflow-logs:/opt/airflow/logs
-                  - ../project:/opt/project
+                  - /opt/trainscan/project:/opt/project
                   - /var/run/docker.sock:/var/run/docker.sock
                 command: scheduler
                 networks:
