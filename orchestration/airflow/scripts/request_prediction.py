@@ -3,10 +3,6 @@ import os
 import sys
 from pathlib import Path
 
-import requests
-
-from app.infrastructure.storage.s3_client import S3Client
-
 
 def main() -> int:
     if len(sys.argv) != 5:
@@ -20,6 +16,12 @@ def main() -> int:
     wagon_type = sys.argv[3]
     output_key = sys.argv[4].lstrip("/")
     output_bucket = os.environ["AIRFLOW_OUTPUT_BUCKET"]
+
+    sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
+
+    import requests
+
+    from app.infrastructure.storage.s3_client import S3Client
 
     with image_path.open("rb") as image_file:
         response = requests.post(
