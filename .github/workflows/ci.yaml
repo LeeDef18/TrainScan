@@ -5,6 +5,10 @@ on:
     branches: [main, develop]
   pull_request:
 
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
 jobs:
 
   lint:
@@ -57,8 +61,77 @@ jobs:
   docker:
     runs-on: ubuntu-latest
     needs: test
+    permissions:
+      contents: read
+      packages: write
     steps:
       - uses: actions/checkout@v3
 
-      - name: Build Docker image
-        run: docker build -t trainscan .
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: docker
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Deploy to Selectel VPS
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SELECTEL_VPS_HOST }}
+          username: ${{ secrets.SELECTEL_VPS_USER }}
+          key: ${{ secrets.SELECTEL_VPS_SSH_KEY }}
+          port: ${{ secrets.SELECTEL_VPS_SSH_PORT || '22' }}
+          script: |
+            set -e
+            mkdir -p ${{ vars.SELECTEL_APP_DIR }}
+            cat > ${{ vars.SELECTEL_APP_DIR }}/.env <<'EOF'
+            IMAGE_NAME=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+            APP_ENV=prod
+            LOG_LEVEL=${{ vars.LOG_LEVEL || 'INFO' }}
+            APP_HOST=0.0.0.0
+            APP_PORT=${{ vars.APP_PORT || '8000' }}
+            MODEL_PATH=${{ vars.MODEL_PATH }}
+            MODEL_BUCKET=${{ vars.MODEL_BUCKET }}
+            MODEL_KEY=${{ vars.MODEL_KEY }}
+            RULE_TABLE_PATH=${{ vars.RULE_TABLE_PATH }}
+            RULE_TABLE_BUCKET=${{ vars.RULE_TABLE_BUCKET }}
+            RULE_TABLE_KEY=${{ vars.RULE_TABLE_KEY }}
+            S3_ENDPOINT=${{ vars.S3_ENDPOINT }}
+            S3_KEY=${{ secrets.S3_KEY }}
+            S3_SECRET=${{ secrets.S3_SECRET }}
+            MODEL_CONF=${{ vars.MODEL_CONF }}
+            MODEL_IOU=${{ vars.MODEL_IOU }}
+            EOF
+            docker login ${{ env.REGISTRY }} -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
+            docker compose -f ${{ vars.SELECTEL_APP_DIR }}/docker-compose.yml pull
+            docker compose -f ${{ vars.SELECTEL_APP_DIR }}/docker-compose.yml up -d
+            docker image prune -f

@@ -39,6 +39,10 @@ def test_get_settings_reads_environment(monkeypatch):
     monkeypatch.setenv("RULE_TABLE_KEY", "orientation.csv")
     monkeypatch.setenv("MODEL_CONF", "0.5")
     monkeypatch.setenv("MODEL_IOU", "0.6")
+    monkeypatch.setenv("APP_ENV", "test")
+    monkeypatch.setenv("LOG_LEVEL", "DEBUG")
+    monkeypatch.setenv("APP_HOST", "127.0.0.1")
+    monkeypatch.setenv("APP_PORT", "9000")
 
     settings = get_settings()
 
@@ -51,6 +55,10 @@ def test_get_settings_reads_environment(monkeypatch):
     assert settings.rule_table_key == "orientation.csv"
     assert settings.conf == 0.5
     assert settings.iou == 0.6
+    assert settings.app_env == "test"
+    assert settings.log_level == "DEBUG"
+    assert settings.host == "127.0.0.1"
+    assert settings.port == 9000
 
     get_settings.cache_clear()
 

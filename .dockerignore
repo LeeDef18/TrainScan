@@ -23,3 +23,4 @@ orchestration/airflow/logs/
 orchestration/airflow/data/output/
 
 .env
+deploy/.env

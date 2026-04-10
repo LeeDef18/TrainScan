@@ -232,13 +232,26 @@ docker run --rm -p 8000:8000 \
   trainscan
 ```
 
+## Deploy на VPS
+
+Для учебного production-like сценария используется следующая схема:
+
+- Docker-образ публикуется в `GHCR`
+- модель и rule table остаются в `Selectel S3`
+- GitHub Actions по `push` в `main` делает деплой на VPS через `SSH`
+- на сервере выполняется `docker compose pull && docker compose up -d`
+
+Compose-файл для VPS лежит в `deploy/docker-compose.yml`.
+Инструкция по bootstrap и переменным лежит в `deploy/README.md`.
+
 ## CI/CD
 
 В репозитории настроен GitHub Actions pipeline:
 
 - `lint` - black, isort, flake8, pylint, mypy
 - `test` - unit-тесты и контроль покрытия не ниже 70%
-- `docker` - проверка сборки Docker-образа
+- `docker` - сборка и публикация Docker-образа в `GHCR`
+- `deploy` - деплой на Selectel VPS по `SSH` после `push` в `main`
 
 Coverage-отчет сохраняется как artifact после job `test`.
 
@@ -247,6 +260,10 @@ Coverage-отчет сохраняется как artifact после job `test`
 - `Secrets`
   - `S3_KEY`
   - `S3_SECRET`
+  - `SELECTEL_VPS_HOST`
+  - `SELECTEL_VPS_USER`
+  - `SELECTEL_VPS_SSH_KEY`
+  - `SELECTEL_VPS_SSH_PORT`
   - `AIRFLOW_ADMIN_PASSWORD`
 - `Variables`
   - `S3_ENDPOINT`
@@ -254,6 +271,13 @@ Coverage-отчет сохраняется как artifact после job `test`
   - `MODEL_KEY`
   - `RULE_TABLE_BUCKET`
   - `RULE_TABLE_KEY`
+  - `MODEL_PATH`
+  - `RULE_TABLE_PATH`
+  - `MODEL_CONF`
+  - `MODEL_IOU`
+  - `APP_PORT`
+  - `LOG_LEVEL`
+  - `SELECTEL_APP_DIR`
   - `AIRFLOW_ADMIN_USERNAME`
   - `AIRFLOW_ADMIN_EMAIL`
 

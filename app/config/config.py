@@ -26,6 +26,10 @@ class Settings(BaseSettings):
     rule_table_key: str = Field(default="rule_table.csv", alias="RULE_TABLE_KEY")
     conf: float = Field(default=0.25, alias="MODEL_CONF")
     iou: float = Field(default=0.45, alias="MODEL_IOU")
+    app_env: str = Field(default="dev", alias="APP_ENV")
+    log_level: str = Field(default="INFO", alias="LOG_LEVEL")
+    host: str = Field(default="0.0.0.0", alias="APP_HOST")
+    port: int = Field(default=8000, alias="APP_PORT")
 
 
 @lru_cache
