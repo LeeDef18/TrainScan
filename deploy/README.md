@@ -64,6 +64,8 @@ scp -r deploy/nginx <user>@<host>:/opt/trainscan/
 - `MODEL_IOU`
 - `AIRFLOW_BASE_URL`
 - `TRAINSCAN_API_URL`
+- `AIRFLOW_S3_LOG_BUCKET`
+- `AIRFLOW_S3_LOG_PREFIX`
 - `AIRFLOW_ADMIN_USERNAME`
 - `AIRFLOW_ADMIN_EMAIL`
 
@@ -80,3 +82,12 @@ http://<server-ip>:8080/
 ```
 
 Для внешнего доступа нужно открыть inbound порт `8080` в группе безопасности сервера.
+
+Логи Airflow task-ов отправляются в Selectel S3 через тот же аккаунт Object Storage.
+Для этого используются:
+
+- `S3_ENDPOINT`
+- `S3_KEY`
+- `S3_SECRET`
+- `AIRFLOW_S3_LOG_BUCKET`
+- `AIRFLOW_S3_LOG_PREFIX`

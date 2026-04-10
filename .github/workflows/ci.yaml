@@ -134,6 +134,8 @@ jobs:
             APP_PORT=${{ vars.APP_PORT || '8000' }}
             AIRFLOW_BASE_URL=${{ vars.AIRFLOW_BASE_URL || 'http://139.100.195.58:8080' }}
             TRAINSCAN_API_URL=${{ vars.TRAINSCAN_API_URL || 'http://nginx' }}
+            AIRFLOW_S3_LOG_BUCKET=${{ vars.AIRFLOW_S3_LOG_BUCKET }}
+            AIRFLOW_S3_LOG_PREFIX=${{ vars.AIRFLOW_S3_LOG_PREFIX || 'trainscan-airflow' }}
             AIRFLOW_DB_PASSWORD=${{ secrets.AIRFLOW_DB_PASSWORD }}
             AIRFLOW_ADMIN_USERNAME=${{ vars.AIRFLOW_ADMIN_USERNAME }}
             AIRFLOW_ADMIN_PASSWORD=${{ secrets.AIRFLOW_ADMIN_PASSWORD }}
@@ -189,7 +191,9 @@ jobs:
                   AIRFLOW__WEBSERVER__BASE_URL: ${{ vars.AIRFLOW_BASE_URL || 'http://139.100.195.58:8080' }}
                   AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "true"
                   AIRFLOW__LOGGING__BASE_LOG_FOLDER: /opt/airflow/logs
-                  AIRFLOW__LOGGING__REMOTE_LOGGING: "false"
+                  AIRFLOW__LOGGING__REMOTE_LOGGING: "true"
+                  AIRFLOW__LOGGING__REMOTE_BASE_LOG_FOLDER: s3://${{ vars.AIRFLOW_S3_LOG_BUCKET }}/${{ vars.AIRFLOW_S3_LOG_PREFIX || 'trainscan-airflow' }}
+                  AIRFLOW__LOGGING__REMOTE_LOG_CONN_ID: airflow_s3_logs
                   AIRFLOW_ADMIN_USERNAME: ${{ vars.AIRFLOW_ADMIN_USERNAME }}
                   AIRFLOW_ADMIN_PASSWORD: ${{ secrets.AIRFLOW_ADMIN_PASSWORD }}
                   AIRFLOW_ADMIN_EMAIL: ${{ vars.AIRFLOW_ADMIN_EMAIL }}
@@ -204,6 +208,10 @@ jobs:
                   - trainscan-shared
                 command: >
                   bash -c "
+                  airflow connections delete airflow_s3_logs >/dev/null 2>&1 || true &&
+                  airflow connections add airflow_s3_logs \
+                  --conn-type aws \
+                  --conn-extra '{\"endpoint_url\": \"${{ vars.S3_ENDPOINT }}\", \"aws_access_key_id\": \"${{ secrets.S3_KEY }}\", \"aws_secret_access_key\": \"${{ secrets.S3_SECRET }}\"}' &&
                   airflow db migrate &&
                   airflow users create
                   --username $${AIRFLOW_ADMIN_USERNAME}
@@ -235,7 +243,9 @@ jobs:
                   AIRFLOW__WEBSERVER__BASE_URL: ${{ vars.AIRFLOW_BASE_URL || 'http://139.100.195.58:8080' }}
                   AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "true"
                   AIRFLOW__LOGGING__BASE_LOG_FOLDER: /opt/airflow/logs
-                  AIRFLOW__LOGGING__REMOTE_LOGGING: "false"
+                  AIRFLOW__LOGGING__REMOTE_LOGGING: "true"
+                  AIRFLOW__LOGGING__REMOTE_BASE_LOG_FOLDER: s3://${{ vars.AIRFLOW_S3_LOG_BUCKET }}/${{ vars.AIRFLOW_S3_LOG_PREFIX || 'trainscan-airflow' }}
+                  AIRFLOW__LOGGING__REMOTE_LOG_CONN_ID: airflow_s3_logs
                   TRAINSCAN_API_URL: ${{ vars.TRAINSCAN_API_URL || 'http://nginx' }}
                 volumes:
                   - /opt/trainscan/project/orchestration/airflow/dags:/opt/airflow/dags
@@ -271,7 +281,9 @@ jobs:
                   AIRFLOW__WEBSERVER__BASE_URL: ${{ vars.AIRFLOW_BASE_URL || 'http://139.100.195.58:8080' }}
                   AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "true"
                   AIRFLOW__LOGGING__BASE_LOG_FOLDER: /opt/airflow/logs
-                  AIRFLOW__LOGGING__REMOTE_LOGGING: "false"
+                  AIRFLOW__LOGGING__REMOTE_LOGGING: "true"
+                  AIRFLOW__LOGGING__REMOTE_BASE_LOG_FOLDER: s3://${{ vars.AIRFLOW_S3_LOG_BUCKET }}/${{ vars.AIRFLOW_S3_LOG_PREFIX || 'trainscan-airflow' }}
+                  AIRFLOW__LOGGING__REMOTE_LOG_CONN_ID: airflow_s3_logs
                   TRAINSCAN_API_URL: ${{ vars.TRAINSCAN_API_URL || 'http://nginx' }}
                 volumes:
                   - /opt/trainscan/project/orchestration/airflow/dags:/opt/airflow/dags

@@ -283,6 +283,8 @@ Coverage-отчет сохраняется как artifact после job `test`
   - `SELECTEL_APP_DIR`
   - `AIRFLOW_BASE_URL`
   - `TRAINSCAN_API_URL`
+  - `AIRFLOW_S3_LOG_BUCKET`
+  - `AIRFLOW_S3_LOG_PREFIX`
   - `AIRFLOW_ADMIN_USERNAME`
   - `AIRFLOW_ADMIN_EMAIL`
 
