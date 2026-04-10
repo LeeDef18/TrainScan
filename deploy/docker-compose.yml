@@ -30,4 +30,5 @@ services:
 
 networks:
   trainscan-shared:
+    external: true
     name: trainscan-shared

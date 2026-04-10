@@ -312,6 +312,7 @@ jobs:
                   - trainscan-shared
             networks:
               trainscan-shared:
+                external: true
                 name: trainscan-shared
             EOF
             cat > ${{ vars.SELECTEL_APP_DIR }}/nginx/default.conf <<'EOF'
