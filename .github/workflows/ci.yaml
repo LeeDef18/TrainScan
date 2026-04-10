@@ -204,7 +204,6 @@ jobs:
                 volumes:
                   - /opt/trainscan/project/orchestration/airflow/dags:/opt/airflow/dags
                   - /opt/trainscan/project/orchestration/airflow/data:/opt/project/orchestration/airflow/data
-                  - airflow-logs:/opt/airflow/logs
                   - /opt/trainscan/project:/opt/project
                 networks:
                   - airflow-internal
@@ -251,7 +250,6 @@ jobs:
                 volumes:
                   - /opt/trainscan/project/orchestration/airflow/dags:/opt/airflow/dags
                   - /opt/trainscan/project/orchestration/airflow/data:/opt/project/orchestration/airflow/data
-                  - airflow-logs:/opt/airflow/logs
                   - /opt/trainscan/project:/opt/project
                   - /var/run/docker.sock:/var/run/docker.sock
                 command: webserver
@@ -291,7 +289,6 @@ jobs:
                 volumes:
                   - /opt/trainscan/project/orchestration/airflow/dags:/opt/airflow/dags
                   - /opt/trainscan/project/orchestration/airflow/data:/opt/project/orchestration/airflow/data
-                  - airflow-logs:/opt/airflow/logs
                   - /opt/trainscan/project:/opt/project
                   - /var/run/docker.sock:/var/run/docker.sock
                 command: scheduler
@@ -301,7 +298,6 @@ jobs:
 
             volumes:
               airflow-postgres-data:
-              airflow-logs:
             networks:
               airflow-internal:
               trainscan-shared:

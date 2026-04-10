@@ -30,6 +30,7 @@ with DAG(
         image=REQUEST_IMAGE,
         api_version="auto",
         auto_remove="success",
+        env_file="/opt/trainscan/.env",
         command=(
             'sh -c "uv run --with requests '
             "python /opt/project/orchestration/airflow/scripts/request_prediction.py "

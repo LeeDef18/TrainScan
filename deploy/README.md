@@ -85,6 +85,7 @@ http://<server-ip>:8080/
 Для внешнего доступа нужно открыть inbound порт `8080` в группе безопасности сервера.
 
 Логи Airflow task-ов отправляются в Selectel S3 через тот же аккаунт Object Storage.
+Постоянный named volume для task logs больше не используется: source of truth для логов - S3 и UI Airflow.
 Для этого используются:
 
 - `S3_ENDPOINT`
