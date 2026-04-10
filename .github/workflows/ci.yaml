@@ -156,6 +156,8 @@ jobs:
                   interval: 10s
                   timeout: 5s
                   retries: 5
+                networks:
+                  - airflow-internal
 
               airflow-init:
                 image: apache/airflow:2.10.0
@@ -186,6 +188,9 @@ jobs:
                   - ../project/orchestration/airflow/data:/opt/project/orchestration/airflow/data
                   - airflow-logs:/opt/airflow/logs
                   - ../project:/opt/project
+                networks:
+                  - airflow-internal
+                  - trainscan-shared
                 command: >
                   bash -c "
                   airflow db migrate &&
@@ -228,6 +233,9 @@ jobs:
                   - ../project:/opt/project
                   - /var/run/docker.sock:/var/run/docker.sock
                 command: webserver
+                networks:
+                  - airflow-internal
+                  - trainscan-shared
 
               airflow-scheduler:
                 image: apache/airflow:2.10.0
@@ -259,10 +267,18 @@ jobs:
                   - ../project:/opt/project
                   - /var/run/docker.sock:/var/run/docker.sock
                 command: scheduler
+                networks:
+                  - airflow-internal
+                  - trainscan-shared
 
             volumes:
               airflow-postgres-data:
               airflow-logs:
+            networks:
+              airflow-internal:
+              trainscan-shared:
+                external: true
+                name: trainscan-shared
             EOF
             cat > ${{ vars.SELECTEL_APP_DIR }}/docker-compose.yml <<'EOF'
             services:
@@ -278,6 +294,8 @@ jobs:
                   timeout: 10s
                   retries: 5
                   start_period: 30s
+                networks:
+                  - trainscan-shared
 
               nginx:
                 image: nginx:1.27-alpine
@@ -290,6 +308,11 @@ jobs:
                   - "80:80"
                 volumes:
                   - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+                networks:
+                  - trainscan-shared
+            networks:
+              trainscan-shared:
+                name: trainscan-shared
             EOF
             cat > ${{ vars.SELECTEL_APP_DIR }}/nginx/default.conf <<'EOF'
             server {
@@ -330,6 +353,7 @@ jobs:
             }
             EOF
             docker login ${{ env.REGISTRY }} -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
+            docker network inspect trainscan-shared >/dev/null 2>&1 || docker network create trainscan-shared
             docker compose -f ${{ vars.SELECTEL_APP_DIR }}/docker-compose.yml pull
             docker compose -f ${{ vars.SELECTEL_APP_DIR }}/docker-compose.yml up -d
             mkdir -p ${{ vars.SELECTEL_APP_DIR }}/project

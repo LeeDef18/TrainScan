@@ -35,6 +35,7 @@ scp -r deploy/nginx <user>@<host>:/opt/trainscan/
 ```
 
 Текущий workflow также сам обновляет `docker-compose.yml` и `nginx/default.conf` на VPS при деплое.
+Также он создает общую Docker-сеть `trainscan-shared`, чтобы `Nginx`, API и Airflow видели друг друга по service name.
 
 ## GitHub Secrets
 

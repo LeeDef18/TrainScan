@@ -14,6 +14,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - airflow-internal
 
   airflow-init:
     image: apache/airflow:2.10.0
@@ -44,6 +46,9 @@ services:
       - ../project/orchestration/airflow/data:/opt/project/orchestration/airflow/data
       - airflow-logs:/opt/airflow/logs
       - ../project:/opt/project
+    networks:
+      - airflow-internal
+      - trainscan-shared
     command: >
       bash -c "
       airflow db migrate &&
@@ -86,6 +91,9 @@ services:
       - ../project:/opt/project
       - /var/run/docker.sock:/var/run/docker.sock
     command: webserver
+    networks:
+      - airflow-internal
+      - trainscan-shared
 
   airflow-scheduler:
     image: apache/airflow:2.10.0
@@ -117,7 +125,16 @@ services:
       - ../project:/opt/project
       - /var/run/docker.sock:/var/run/docker.sock
     command: scheduler
+    networks:
+      - airflow-internal
+      - trainscan-shared
 
 volumes:
   airflow-postgres-data:
   airflow-logs:
+
+networks:
+  airflow-internal:
+  trainscan-shared:
+    external: true
+    name: trainscan-shared

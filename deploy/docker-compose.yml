@@ -11,6 +11,8 @@ services:
       timeout: 10s
       retries: 5
       start_period: 30s
+    networks:
+      - trainscan-shared
 
   nginx:
     image: nginx:1.27-alpine
@@ -23,3 +25,9 @@ services:
       - "80:80"
     volumes:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - trainscan-shared
+
+networks:
+  trainscan-shared:
+    name: trainscan-shared
