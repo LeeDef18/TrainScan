@@ -103,6 +103,18 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      - name: Copy project files to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ vars.SELECTEL_VPS_HOST }}
+          username: ${{ vars.SELECTEL_VPS_USER }}
+          key: ${{ secrets.SELECTEL_VPS_SSH_KEY }}
+          port: ${{ vars.SELECTEL_VPS_SSH_PORT || '22' }}
+          source: "orchestration/airflow,app,pyproject.toml,uv.lock,.env.example,README.md"
+          target: ${{ vars.SELECTEL_APP_DIR }}/project
+          overwrite: true
+          strip_components: 0
+
       - name: Deploy to Selectel VPS
         uses: appleboy/ssh-action@v1.2.0
         with:
@@ -339,7 +351,5 @@ jobs:
             docker network inspect trainscan-shared >/dev/null 2>&1 || docker network create trainscan-shared
             docker compose -f ${{ vars.SELECTEL_APP_DIR }}/docker-compose.yml pull
             docker compose -f ${{ vars.SELECTEL_APP_DIR }}/docker-compose.yml up -d
-            mkdir -p ${{ vars.SELECTEL_APP_DIR }}/project
-            rsync -av --delete --exclude '.git' --exclude '.venv' --exclude '__pycache__' --exclude '.pytest_cache' --exclude '.mypy_cache' --exclude '.ruff_cache' ./ ${{ vars.SELECTEL_APP_DIR }}/project/
             docker compose -f ${{ vars.SELECTEL_APP_DIR }}/airflow/docker-compose.yml up -d
             docker image prune -f
