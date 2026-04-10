@@ -258,14 +258,14 @@ Coverage-отчет сохраняется как artifact после job `test`
 Для GitHub Settings -> Secrets and variables -> Actions рекомендуется добавить:
 
 - `Secrets`
+  - `SELECTEL_VPS_SSH_KEY`
   - `S3_KEY`
   - `S3_SECRET`
-  - `SELECTEL_VPS_HOST`
-  - `SELECTEL_VPS_USER`
-  - `SELECTEL_VPS_SSH_KEY`
-  - `SELECTEL_VPS_SSH_PORT`
   - `AIRFLOW_ADMIN_PASSWORD`
 - `Variables`
+  - `SELECTEL_VPS_HOST`
+  - `SELECTEL_VPS_USER`
+  - `SELECTEL_VPS_SSH_PORT`
   - `S3_ENDPOINT`
   - `MODEL_BUCKET`
   - `MODEL_KEY`

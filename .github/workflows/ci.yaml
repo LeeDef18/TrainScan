@@ -106,10 +106,10 @@ jobs:
       - name: Deploy to Selectel VPS
         uses: appleboy/ssh-action@v1.2.0
         with:
-          host: ${{ secrets.SELECTEL_VPS_HOST }}
-          username: ${{ secrets.SELECTEL_VPS_USER }}
+          host: ${{ vars.SELECTEL_VPS_HOST }}
+          username: ${{ vars.SELECTEL_VPS_USER }}
           key: ${{ secrets.SELECTEL_VPS_SSH_KEY }}
-          port: ${{ secrets.SELECTEL_VPS_SSH_PORT || '22' }}
+          port: ${{ vars.SELECTEL_VPS_SSH_PORT || '22' }}
           script: |
             set -e
             mkdir -p ${{ vars.SELECTEL_APP_DIR }}

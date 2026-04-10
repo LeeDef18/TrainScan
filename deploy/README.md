@@ -28,15 +28,15 @@ scp deploy/docker-compose.yml <user>@<host>:/opt/trainscan/docker-compose.yml
 
 ## GitHub Secrets
 
-- `SELECTEL_VPS_HOST`
-- `SELECTEL_VPS_USER`
 - `SELECTEL_VPS_SSH_KEY`
-- `SELECTEL_VPS_SSH_PORT`
 - `S3_KEY`
 - `S3_SECRET`
 
 ## GitHub Variables
 
+- `SELECTEL_VPS_HOST`
+- `SELECTEL_VPS_USER`
+- `SELECTEL_VPS_SSH_PORT`
 - `SELECTEL_APP_DIR`
 - `APP_PORT`
 - `LOG_LEVEL`
