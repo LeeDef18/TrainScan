@@ -31,6 +31,7 @@ services:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:${AIRFLOW_DB_PASSWORD}@airflow-postgres:5432/airflow
+      AIRFLOW_CONN_AIRFLOW_S3_LOGS: aws://?endpoint_url=${S3_ENDPOINT}&aws_access_key_id=${S3_KEY}&aws_secret_access_key=${S3_SECRET}
       AIRFLOW__CORE__HOSTNAME_CALLABLE: socket.getfqdn
       AIRFLOW__WEBSERVER__BASE_URL: ${AIRFLOW_BASE_URL}
       AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "true"
@@ -52,10 +53,6 @@ services:
       - trainscan-shared
     command: >
       bash -c "
-      airflow connections delete airflow_s3_logs >/dev/null 2>&1 || true &&
-      airflow connections add airflow_s3_logs \
-      --conn-type aws \
-      --conn-extra '{\"endpoint_url\": \"${S3_ENDPOINT}\", \"aws_access_key_id\": \"${S3_KEY}\", \"aws_secret_access_key\": \"${S3_SECRET}\"}' &&
       airflow db migrate &&
       airflow users create
       --username $${AIRFLOW_ADMIN_USERNAME}
@@ -83,6 +80,7 @@ services:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:${AIRFLOW_DB_PASSWORD}@airflow-postgres:5432/airflow
+      AIRFLOW_CONN_AIRFLOW_S3_LOGS: aws://?endpoint_url=${S3_ENDPOINT}&aws_access_key_id=${S3_KEY}&aws_secret_access_key=${S3_SECRET}
       AIRFLOW__CORE__HOSTNAME_CALLABLE: socket.getfqdn
       AIRFLOW__WEBSERVER__BASE_URL: ${AIRFLOW_BASE_URL}
       AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "true"
@@ -121,6 +119,7 @@ services:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:${AIRFLOW_DB_PASSWORD}@airflow-postgres:5432/airflow
+      AIRFLOW_CONN_AIRFLOW_S3_LOGS: aws://?endpoint_url=${S3_ENDPOINT}&aws_access_key_id=${S3_KEY}&aws_secret_access_key=${S3_SECRET}
       AIRFLOW__CORE__HOSTNAME_CALLABLE: socket.getfqdn
       AIRFLOW__WEBSERVER__BASE_URL: ${AIRFLOW_BASE_URL}
       AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "true"
