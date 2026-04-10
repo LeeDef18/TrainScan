@@ -19,8 +19,7 @@ def main() -> int:
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     if output_path.exists():
-        print(f"Prediction already exists: {output_path}")
-        return 0
+        output_path.unlink()
 
     with image_path.open("rb") as image_file:
         response = requests.post(
