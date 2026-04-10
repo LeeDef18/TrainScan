@@ -211,6 +211,10 @@ jobs:
                 command: >
                   bash -c "
                   airflow db migrate &&
+                  airflow variables set AIRFLOW_OUTPUT_BUCKET '${{ vars.AIRFLOW_OUTPUT_BUCKET }}' &&
+                  airflow variables set S3_ENDPOINT '${{ vars.S3_ENDPOINT }}' &&
+                  airflow variables set S3_KEY '${{ secrets.S3_KEY }}' &&
+                  airflow variables set S3_SECRET '${{ secrets.S3_SECRET }}' &&
                   airflow users create
                   --username $${AIRFLOW_ADMIN_USERNAME}
                   --password $${AIRFLOW_ADMIN_PASSWORD}

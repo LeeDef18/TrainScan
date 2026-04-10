@@ -54,6 +54,10 @@ services:
     command: >
       bash -c "
       airflow db migrate &&
+      airflow variables set AIRFLOW_OUTPUT_BUCKET '${AIRFLOW_OUTPUT_BUCKET}' &&
+      airflow variables set S3_ENDPOINT '${S3_ENDPOINT}' &&
+      airflow variables set S3_KEY '${S3_KEY}' &&
+      airflow variables set S3_SECRET '${S3_SECRET}' &&
       airflow users create
       --username $${AIRFLOW_ADMIN_USERNAME}
       --password $${AIRFLOW_ADMIN_PASSWORD}

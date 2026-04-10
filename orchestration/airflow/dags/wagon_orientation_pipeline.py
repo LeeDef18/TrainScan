@@ -4,6 +4,7 @@ import os
 from datetime import datetime
 
 from airflow import DAG
+from airflow.models import Variable
 from airflow.operators.empty import EmptyOperator
 from airflow.providers.docker.operators.docker import DockerOperator
 from docker.types import Mount
@@ -30,7 +31,12 @@ with DAG(
         image=REQUEST_IMAGE,
         api_version="auto",
         auto_remove="success",
-        env_file="/opt/trainscan/.env",
+        environment={
+            "AIRFLOW_OUTPUT_BUCKET": Variable.get("AIRFLOW_OUTPUT_BUCKET"),
+            "S3_ENDPOINT": Variable.get("S3_ENDPOINT"),
+            "S3_KEY": Variable.get("S3_KEY"),
+            "S3_SECRET": Variable.get("S3_SECRET"),
+        },
         command=(
             'sh -c "uv run --with requests '
             "python /opt/project/orchestration/airflow/scripts/request_prediction.py "
