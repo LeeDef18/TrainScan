@@ -33,7 +33,6 @@ services:
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:${AIRFLOW_DB_PASSWORD}@airflow-postgres:5432/airflow
       AIRFLOW__CORE__HOSTNAME_CALLABLE: socket.getfqdn
       AIRFLOW__WEBSERVER__BASE_URL: ${AIRFLOW_BASE_URL}
-      AIRFLOW__WEBSERVER__ENABLE_PROXY_FIX: "true"
       AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "true"
       AIRFLOW__LOGGING__BASE_LOG_FOLDER: /opt/airflow/logs
       AIRFLOW__LOGGING__REMOTE_LOGGING: "false"
@@ -79,7 +78,6 @@ services:
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:${AIRFLOW_DB_PASSWORD}@airflow-postgres:5432/airflow
       AIRFLOW__CORE__HOSTNAME_CALLABLE: socket.getfqdn
       AIRFLOW__WEBSERVER__BASE_URL: ${AIRFLOW_BASE_URL}
-      AIRFLOW__WEBSERVER__ENABLE_PROXY_FIX: "true"
       AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "true"
       AIRFLOW__LOGGING__BASE_LOG_FOLDER: /opt/airflow/logs
       AIRFLOW__LOGGING__REMOTE_LOGGING: "false"
@@ -91,6 +89,8 @@ services:
       - ../project:/opt/project
       - /var/run/docker.sock:/var/run/docker.sock
     command: webserver
+    ports:
+      - "8080:8080"
     networks:
       - airflow-internal
       - trainscan-shared
@@ -113,7 +113,6 @@ services:
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:${AIRFLOW_DB_PASSWORD}@airflow-postgres:5432/airflow
       AIRFLOW__CORE__HOSTNAME_CALLABLE: socket.getfqdn
       AIRFLOW__WEBSERVER__BASE_URL: ${AIRFLOW_BASE_URL}
-      AIRFLOW__WEBSERVER__ENABLE_PROXY_FIX: "true"
       AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "true"
       AIRFLOW__LOGGING__BASE_LOG_FOLDER: /opt/airflow/logs
       AIRFLOW__LOGGING__REMOTE_LOGGING: "false"

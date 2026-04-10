@@ -71,12 +71,12 @@ scp -r deploy/nginx <user>@<host>:/opt/trainscan/
 
 ## Airflow на VPS
 
-Airflow деплоится отдельным compose-файлом в `${SELECTEL_APP_DIR}/airflow/docker-compose.yml` и публикуется наружу через основной `Nginx`.
+Airflow деплоится отдельным compose-файлом в `${SELECTEL_APP_DIR}/airflow/docker-compose.yml` и публикуется наружу напрямую на `8080`.
 
 После деплоя UI будет доступен по адресу:
 
 ```text
-http://<server-ip>/airflow/
+http://<server-ip>:8080/
 ```
 
-Для внешнего доступа достаточно открыть inbound порт `80` в группе безопасности сервера. Порт `8080` наружу открывать не нужно.
+Для внешнего доступа нужно открыть inbound порт `8080` в группе безопасности сервера.

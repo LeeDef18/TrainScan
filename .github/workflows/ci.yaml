@@ -120,7 +120,7 @@ jobs:
             LOG_LEVEL=${{ vars.LOG_LEVEL || 'INFO' }}
             APP_HOST=0.0.0.0
             APP_PORT=${{ vars.APP_PORT || '8000' }}
-            AIRFLOW_BASE_URL=${{ vars.AIRFLOW_BASE_URL || 'http://139.100.195.58/airflow' }}
+            AIRFLOW_BASE_URL=${{ vars.AIRFLOW_BASE_URL || 'http://139.100.195.58:8080' }}
             TRAINSCAN_API_URL=${{ vars.TRAINSCAN_API_URL || 'http://nginx' }}
             AIRFLOW_DB_PASSWORD=${{ secrets.AIRFLOW_DB_PASSWORD }}
             AIRFLOW_ADMIN_USERNAME=${{ vars.AIRFLOW_ADMIN_USERNAME }}
@@ -174,8 +174,7 @@ jobs:
                   AIRFLOW__CORE__LOAD_EXAMPLES: "false"
                   AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:${{ secrets.AIRFLOW_DB_PASSWORD }}@airflow-postgres:5432/airflow
                   AIRFLOW__CORE__HOSTNAME_CALLABLE: socket.getfqdn
-                  AIRFLOW__WEBSERVER__BASE_URL: ${{ vars.AIRFLOW_BASE_URL || 'http://139.100.195.58/airflow' }}
-                  AIRFLOW__WEBSERVER__ENABLE_PROXY_FIX: "true"
+                  AIRFLOW__WEBSERVER__BASE_URL: ${{ vars.AIRFLOW_BASE_URL || 'http://139.100.195.58:8080' }}
                   AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "true"
                   AIRFLOW__LOGGING__BASE_LOG_FOLDER: /opt/airflow/logs
                   AIRFLOW__LOGGING__REMOTE_LOGGING: "false"
@@ -220,8 +219,7 @@ jobs:
                   AIRFLOW__CORE__LOAD_EXAMPLES: "false"
                   AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:${{ secrets.AIRFLOW_DB_PASSWORD }}@airflow-postgres:5432/airflow
                   AIRFLOW__CORE__HOSTNAME_CALLABLE: socket.getfqdn
-                  AIRFLOW__WEBSERVER__BASE_URL: ${{ vars.AIRFLOW_BASE_URL || 'http://139.100.195.58/airflow' }}
-                  AIRFLOW__WEBSERVER__ENABLE_PROXY_FIX: "true"
+                  AIRFLOW__WEBSERVER__BASE_URL: ${{ vars.AIRFLOW_BASE_URL || 'http://139.100.195.58:8080' }}
                   AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "true"
                   AIRFLOW__LOGGING__BASE_LOG_FOLDER: /opt/airflow/logs
                   AIRFLOW__LOGGING__REMOTE_LOGGING: "false"
@@ -233,6 +231,8 @@ jobs:
                   - ../project:/opt/project
                   - /var/run/docker.sock:/var/run/docker.sock
                 command: webserver
+                ports:
+                  - "8080:8080"
                 networks:
                   - airflow-internal
                   - trainscan-shared
@@ -254,8 +254,7 @@ jobs:
                   AIRFLOW__CORE__LOAD_EXAMPLES: "false"
                   AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:${{ secrets.AIRFLOW_DB_PASSWORD }}@airflow-postgres:5432/airflow
                   AIRFLOW__CORE__HOSTNAME_CALLABLE: socket.getfqdn
-                  AIRFLOW__WEBSERVER__BASE_URL: ${{ vars.AIRFLOW_BASE_URL || 'http://139.100.195.58/airflow' }}
-                  AIRFLOW__WEBSERVER__ENABLE_PROXY_FIX: "true"
+                  AIRFLOW__WEBSERVER__BASE_URL: ${{ vars.AIRFLOW_BASE_URL || 'http://139.100.195.58:8080' }}
                   AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "true"
                   AIRFLOW__LOGGING__BASE_LOG_FOLDER: /opt/airflow/logs
                   AIRFLOW__LOGGING__REMOTE_LOGGING: "false"
@@ -322,24 +321,6 @@ jobs:
                 server_name _;
 
                 client_max_body_size 20m;
-
-                location = /airflow {
-                    return 301 /airflow/;
-                }
-
-                location /airflow/ {
-                    rewrite ^/airflow/(.*)$ /$1 break;
-                    proxy_pass http://airflow-webserver:8080;
-                    proxy_http_version 1.1;
-                    proxy_set_header Host $host;
-                    proxy_set_header X-Real-IP $remote_addr;
-                    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-                    proxy_set_header X-Forwarded-Proto $scheme;
-                    proxy_set_header X-Forwarded-Prefix /airflow;
-                    proxy_read_timeout 300s;
-                    proxy_connect_timeout 60s;
-                    proxy_send_timeout 300s;
-                }
 
                 location / {
                     proxy_pass http://trainscan:8000;
