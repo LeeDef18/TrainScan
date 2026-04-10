@@ -240,6 +240,7 @@ docker run --rm -p 8000:8000 \
 - модель и rule table остаются в `Selectel S3`
 - GitHub Actions по `push` в `main` делает деплой на VPS через `SSH`
 - на сервере выполняется `docker compose pull && docker compose up -d`
+- внешний HTTP-трафик обслуживает `Nginx`, который проксирует запросы в FastAPI-контейнер
 
 Compose-файл для VPS лежит в `deploy/docker-compose.yml`.
 Инструкция по bootstrap и переменным лежит в `deploy/README.md`.

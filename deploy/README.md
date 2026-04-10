@@ -1,11 +1,12 @@
 # Deploy
 
-Учебный production-like деплой строится так:
+production-like деплой строится так:
 
 - Docker-образы публикуются в `GHCR`
 - модель и таблица правил остаются в `Selectel S3`
 - GitHub Actions после `push` в `main` подключается по `SSH` к VPS
 - на VPS выполняется `docker compose pull && docker compose up -d`
+- внешний трафик идет через `Nginx` на `80` порт, а FastAPI остается внутренним сервисом внутри compose-сети
 
 ## Что должно лежать на VPS
 
@@ -13,6 +14,7 @@
 
 - `docker-compose.yml`
 - `.env` (перезаписывается из GitHub Actions)
+- `nginx/default.conf`
 
 Минимальный bootstrap на VPS:
 
@@ -25,6 +27,14 @@ mkdir -p /opt/trainscan
 ```bash
 scp deploy/docker-compose.yml <user>@<host>:/opt/trainscan/docker-compose.yml
 ```
+
+И конфиг Nginx:
+
+```bash
+scp -r deploy/nginx <user>@<host>:/opt/trainscan/
+```
+
+Текущий workflow также сам обновляет `docker-compose.yml` и `nginx/default.conf` на VPS при деплое.
 
 ## GitHub Secrets
 
