@@ -43,6 +43,7 @@ services:
       AIRFLOW_ADMIN_PASSWORD: ${AIRFLOW_ADMIN_PASSWORD}
       AIRFLOW_ADMIN_EMAIL: ${AIRFLOW_ADMIN_EMAIL}
       TRAINSCAN_API_URL: ${TRAINSCAN_API_URL}
+      AIRFLOW_OUTPUT_BUCKET: ${AIRFLOW_OUTPUT_BUCKET}
     volumes:
       - /opt/trainscan/project/orchestration/airflow/dags:/opt/airflow/dags
       - /opt/trainscan/project/orchestration/airflow/data:/opt/project/orchestration/airflow/data
@@ -89,6 +90,7 @@ services:
       AIRFLOW__LOGGING__REMOTE_BASE_LOG_FOLDER: s3://${AIRFLOW_S3_LOG_BUCKET}/${AIRFLOW_S3_LOG_PREFIX}
       AIRFLOW__LOGGING__REMOTE_LOG_CONN_ID: airflow_s3_logs
       TRAINSCAN_API_URL: ${TRAINSCAN_API_URL}
+      AIRFLOW_OUTPUT_BUCKET: ${AIRFLOW_OUTPUT_BUCKET}
     volumes:
       - /opt/trainscan/project/orchestration/airflow/dags:/opt/airflow/dags
       - /opt/trainscan/project/orchestration/airflow/data:/opt/project/orchestration/airflow/data
@@ -128,6 +130,7 @@ services:
       AIRFLOW__LOGGING__REMOTE_BASE_LOG_FOLDER: s3://${AIRFLOW_S3_LOG_BUCKET}/${AIRFLOW_S3_LOG_PREFIX}
       AIRFLOW__LOGGING__REMOTE_LOG_CONN_ID: airflow_s3_logs
       TRAINSCAN_API_URL: ${TRAINSCAN_API_URL}
+      AIRFLOW_OUTPUT_BUCKET: ${AIRFLOW_OUTPUT_BUCKET}
     volumes:
       - /opt/trainscan/project/orchestration/airflow/dags:/opt/airflow/dags
       - /opt/trainscan/project/orchestration/airflow/data:/opt/project/orchestration/airflow/data

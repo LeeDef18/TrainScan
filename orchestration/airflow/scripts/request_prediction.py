@@ -1,25 +1,25 @@
 import json
+import os
 import sys
 from pathlib import Path
 
 import requests
+
+from app.infrastructure.storage.s3_client import S3Client
 
 
 def main() -> int:
     if len(sys.argv) != 5:
         raise SystemExit(
             "Usage: python request_prediction.py <api-url> <image-path> "
-            "<wagon-type> <output-path>"
+            "<wagon-type> <output-key>"
         )
 
     api_url = sys.argv[1].rstrip("/")
     image_path = Path(sys.argv[2])
     wagon_type = sys.argv[3]
-    output_path = Path(sys.argv[4])
-
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    if output_path.exists():
-        output_path.unlink()
+    output_key = sys.argv[4].lstrip("/")
+    output_bucket = os.environ["AIRFLOW_OUTPUT_BUCKET"]
 
     with image_path.open("rb") as image_file:
         response = requests.post(
@@ -32,10 +32,19 @@ def main() -> int:
     response.raise_for_status()
     payload = response.json()
 
-    with output_path.open("w", encoding="utf-8") as result_file:
-        json.dump(payload, result_file, ensure_ascii=False, indent=2)
+    client = S3Client(
+        endpoint=os.environ["S3_ENDPOINT"],
+        key=os.environ.get("S3_KEY"),
+        secret=os.environ.get("S3_SECRET"),
+    )
+    client.client.put_object(
+        Bucket=output_bucket,
+        Key=output_key,
+        Body=json.dumps(payload, ensure_ascii=False, indent=2).encode("utf-8"),
+        ContentType="application/json",
+    )
 
-    print(f"Saved prediction to {output_path}")
+    print(f"Saved prediction to s3://{output_bucket}/{output_key}")
     return 0
 
 

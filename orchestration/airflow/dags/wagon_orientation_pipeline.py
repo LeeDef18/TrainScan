@@ -11,7 +11,7 @@ from docker.types import Mount
 API_URL = os.getenv("TRAINSCAN_API_URL", "http://nginx")
 PROJECT_ROOT = "/opt/project"
 INPUT_IMAGE = "/opt/project/orchestration/airflow/data/input/sample_wagon.jpg"
-OUTPUT_FILE = "/opt/project/orchestration/airflow/data/output/{{ ds }}_prediction.json"
+OUTPUT_KEY = "{{ ds }}_prediction.json"
 REQUEST_IMAGE = "ghcr.io/astral-sh/uv:0.6.14-python3.11-bookworm-slim"
 
 with DAG(
@@ -33,7 +33,7 @@ with DAG(
         command=(
             'sh -c "uv run --with requests '
             "python /opt/project/orchestration/airflow/scripts/request_prediction.py "
-            f'{API_URL} {INPUT_IMAGE} 19-752 {OUTPUT_FILE}"'
+            f'{API_URL} {INPUT_IMAGE} 19-752 {OUTPUT_KEY}"'
         ),
         docker_url="unix://var/run/docker.sock",
         network_mode="trainscan-shared",

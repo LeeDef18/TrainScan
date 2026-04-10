@@ -136,6 +136,7 @@ jobs:
             TRAINSCAN_API_URL=${{ vars.TRAINSCAN_API_URL || 'http://nginx' }}
             AIRFLOW_S3_LOG_BUCKET=${{ vars.AIRFLOW_S3_LOG_BUCKET }}
             AIRFLOW_S3_LOG_PREFIX=${{ vars.AIRFLOW_S3_LOG_PREFIX || 'trainscan-airflow' }}
+            AIRFLOW_OUTPUT_BUCKET=${{ vars.AIRFLOW_OUTPUT_BUCKET }}
             AIRFLOW_DB_PASSWORD=${{ secrets.AIRFLOW_DB_PASSWORD }}
             AIRFLOW_ADMIN_USERNAME=${{ vars.AIRFLOW_ADMIN_USERNAME }}
             AIRFLOW_ADMIN_PASSWORD=${{ secrets.AIRFLOW_ADMIN_PASSWORD }}
@@ -199,6 +200,7 @@ jobs:
                   AIRFLOW_ADMIN_PASSWORD: ${{ secrets.AIRFLOW_ADMIN_PASSWORD }}
                   AIRFLOW_ADMIN_EMAIL: ${{ vars.AIRFLOW_ADMIN_EMAIL }}
                   TRAINSCAN_API_URL: ${{ vars.TRAINSCAN_API_URL || 'http://nginx' }}
+                  AIRFLOW_OUTPUT_BUCKET: ${{ vars.AIRFLOW_OUTPUT_BUCKET }}
                 volumes:
                   - /opt/trainscan/project/orchestration/airflow/dags:/opt/airflow/dags
                   - /opt/trainscan/project/orchestration/airflow/data:/opt/project/orchestration/airflow/data
@@ -245,6 +247,7 @@ jobs:
                   AIRFLOW__LOGGING__REMOTE_BASE_LOG_FOLDER: s3://${{ vars.AIRFLOW_S3_LOG_BUCKET }}/${{ vars.AIRFLOW_S3_LOG_PREFIX || 'trainscan-airflow' }}
                   AIRFLOW__LOGGING__REMOTE_LOG_CONN_ID: airflow_s3_logs
                   TRAINSCAN_API_URL: ${{ vars.TRAINSCAN_API_URL || 'http://nginx' }}
+                  AIRFLOW_OUTPUT_BUCKET: ${{ vars.AIRFLOW_OUTPUT_BUCKET }}
                 volumes:
                   - /opt/trainscan/project/orchestration/airflow/dags:/opt/airflow/dags
                   - /opt/trainscan/project/orchestration/airflow/data:/opt/project/orchestration/airflow/data
@@ -284,6 +287,7 @@ jobs:
                   AIRFLOW__LOGGING__REMOTE_BASE_LOG_FOLDER: s3://${{ vars.AIRFLOW_S3_LOG_BUCKET }}/${{ vars.AIRFLOW_S3_LOG_PREFIX || 'trainscan-airflow' }}
                   AIRFLOW__LOGGING__REMOTE_LOG_CONN_ID: airflow_s3_logs
                   TRAINSCAN_API_URL: ${{ vars.TRAINSCAN_API_URL || 'http://nginx' }}
+                  AIRFLOW_OUTPUT_BUCKET: ${{ vars.AIRFLOW_OUTPUT_BUCKET }}
                 volumes:
                   - /opt/trainscan/project/orchestration/airflow/dags:/opt/airflow/dags
                   - /opt/trainscan/project/orchestration/airflow/data:/opt/project/orchestration/airflow/data

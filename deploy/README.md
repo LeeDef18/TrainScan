@@ -66,6 +66,7 @@ scp -r deploy/nginx <user>@<host>:/opt/trainscan/
 - `TRAINSCAN_API_URL`
 - `AIRFLOW_S3_LOG_BUCKET`
 - `AIRFLOW_S3_LOG_PREFIX`
+- `AIRFLOW_OUTPUT_BUCKET`
 - `AIRFLOW_ADMIN_USERNAME`
 - `AIRFLOW_ADMIN_EMAIL`
 
@@ -91,3 +92,11 @@ http://<server-ip>:8080/
 - `S3_SECRET`
 - `AIRFLOW_S3_LOG_BUCKET`
 - `AIRFLOW_S3_LOG_PREFIX`
+
+Результат task `predict_orientation` также сохраняется в S3 и перезаписывается по ключу вида:
+
+```text
+<YYYY-MM-DD>_prediction.json
+```
+
+Для него используется bucket `AIRFLOW_OUTPUT_BUCKET`.
