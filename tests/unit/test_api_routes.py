@@ -1,129 +1,138 @@
 import asyncio
-from dataclasses import dataclass
-from types import SimpleNamespace
+from io import BytesIO
+from typing import Any, cast
+
+from PIL import Image
+
+from app.interfaces.api import routes
 
 
-@dataclass
-class DummyValidationResponse:
-    wagon_type: str
-    detected_classes: list[str]
-    allowed_classes: list[str]
-    matched_classes: list[str]
-    missing_classes: list[str]
-    orientation: str
+class DummyBox:
+    cls = [0]
+    conf = [0.9]
+
+    class DummyTensor:
+        def __init__(self, coords):
+            self._coords = coords
+
+        def tolist(self):
+            return self._coords
+
+    xyxy = [DummyTensor([1.0, 2.0, 3.0, 4.0])]
+
+
+class DummyRawResult:
+    boxes = [DummyBox()]
+
+    def plot(self):
+        import numpy as np
+
+        return np.zeros((8, 8, 3), dtype=np.uint8)
+
+
+class DummyPredictUseCase:
+    def __init__(self):
+        self.preprocessor = lambda image: image
+        self.inference = self
+        self.detection_extractor = self
+        self.orientation_service = self
+
+    def predict(self, image):
+        return DummyRawResult()
+
+    def get_class_names(self):
+        return {0: "brake_valve"}
+
+    def extract(self, raw_result, model_names):
+        return type(
+            "PredictionResultLike",
+            (),
+            {
+                "detections": [
+                    type(
+                        "DetectionLike",
+                        (),
+                        {
+                            "class_id": 0,
+                            "class_name": "brake_valve",
+                            "confidence": 0.9,
+                        },
+                    )()
+                ],
+                "detected_classes": ["brake_valve"],
+            },
+        )()
+
+    def check(self, prediction, wagon):
+        return type("OrientationLike", (), {"label": "A"})()
 
 
 class DummyValidateRulesUseCase:
     def execute(self, request):
-        return DummyValidationResponse(
-            wagon_type=request.wagon_type,
-            detected_classes=["door", "window"],
-            allowed_classes=["door", "valve"],
-            matched_classes=["door"],
-            missing_classes=["valve"],
-            orientation="A",
-        )
+        return type(
+            "DummyResponse",
+            (),
+            {
+                "wagon_type": request.wagon_type,
+                "detected_classes": request.detected_classes,
+                "allowed_classes": ["brake_valve", "brake_cylinder"],
+                "matched_classes": ["brake_valve"],
+                "missing_classes": ["brake_cylinder"],
+                "orientation": "A",
+            },
+        )()
 
 
 class DummyUploadFile:
-    def __init__(self, filename: str):
+    def __init__(self, filename: str, payload: bytes):
         self.filename = filename
+        self._payload = payload
 
     async def read(self) -> bytes:
-        return b"image-bytes"
+        return self._payload
 
 
-def build_validate_rules_handler():
-    use_case = DummyValidateRulesUseCase()
-
-    async def validate_rules(payload):
-        response = use_case.execute(payload)
-        return {
-            "success": True,
-            "wagon_type": response.wagon_type,
-            "detected_classes": response.detected_classes,
-            "allowed_classes": response.allowed_classes,
-            "matched_classes": response.matched_classes,
-            "missing_classes": response.missing_classes,
-            "orientation_check": response.orientation,
-        }
-
-    return validate_rules
-
-
-def build_predict_batch_handler():
-    def run_prediction(payload: bytes, wagon_type: str) -> dict:
-        assert payload == b"image-bytes"
-        assert wagon_type == "19-752"
-        return {
-            "success": True,
-            "predictions": [
-                {
-                    "bbox": [1.0, 2.0, 3.0, 4.0],
-                    "bbox_int": [1, 2, 3, 4],
-                    "confidence": 0.9,
-                    "class": 0,
-                    "class_name": "brake_valve",
-                }
-            ],
-            "result_image": "result",
-            "original_image": "original",
-            "count": 1,
-            "detected_classes": ["brake_valve"],
-            "wagon_type": wagon_type,
-            "orientation_check": "A",
-        }
-
-    async def predict_batch(files, wagon_type: str):
-        frame_predictions = []
-        for index, file in enumerate(files, start=1):
-            image_bytes = await file.read()
-            frame_payload = run_prediction(image_bytes, wagon_type)
-            frame_predictions.append(
-                {
-                    "frame_index": index,
-                    "filename": file.filename,
-                    **frame_payload,
-                }
-            )
-
-        return {
-            "success": True,
-            "wagon_type": wagon_type,
-            "frames": frame_predictions,
-            "frame_count": len(frame_predictions),
-            "detected_classes": ["brake_valve"],
-            "orientation_check": "A",
-            "summary": {
-                "detections_total": sum(
-                    frame_prediction["count"] for frame_prediction in frame_predictions
-                ),
-                "frames_with_detections": len(frame_predictions),
-                "mean_confidence": 0.9,
-            },
-        }
-
-    return predict_batch
+def make_image_bytes() -> bytes:
+    image = Image.new("RGB", (16, 16), color=0)
+    buffer = BytesIO()
+    image.save(buffer, format="JPEG")
+    return buffer.getvalue()
 
 
 def test_validate_rules_endpoint_returns_diagnostics():
-    payload = SimpleNamespace(wagon_type="19-752", detected_classes=["door", "window"])
+    payload = routes.RulesValidationPayload(
+        wagon_type="19-752", detected_classes=["brake_valve"]
+    )
 
-    response = asyncio.run(build_validate_rules_handler()(payload))
+    response = asyncio.run(
+        routes.validate_rules(
+            payload=payload,
+            use_case=cast(Any, DummyValidateRulesUseCase()),
+        )
+    )
 
-    assert response["matched_classes"] == ["door"]
+    assert response["matched_classes"] == ["brake_valve"]
     assert response["orientation_check"] == "A"
 
 
 def test_predict_batch_endpoint_returns_aggregated_response():
-    payload = asyncio.run(
-        build_predict_batch_handler()(
-            files=[DummyUploadFile("frame1.jpg"), DummyUploadFile("frame2.jpg")],
+    image_bytes = make_image_bytes()
+
+    response = asyncio.run(
+        routes.predict_batch(
+            files=cast(
+                Any,
+                [
+                    DummyUploadFile("frame1.jpg", image_bytes),
+                    DummyUploadFile("frame2.jpg", image_bytes),
+                ],
+            ),
             wagon_type="19-752",
+            use_case=cast(Any, DummyPredictUseCase()),
         )
     )
 
-    assert payload["frame_count"] == 2
-    assert payload["orientation_check"] == "A"
-    assert payload["summary"]["detections_total"] == 2
-    assert payload["frames"][0]["filename"] == "frame1.jpg"
+    assert response["frame_count"] == 2
+    assert response["orientation_check"] == "A"
+    assert response["summary"]["detections_total"] == 2
+    assert response["frames"][0]["filename"] == "frame1.jpg"

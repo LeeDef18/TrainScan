@@ -2,7 +2,16 @@ import io
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, Body, File, Form, HTTPException, Request, UploadFile
+from fastapi import (
+    APIRouter,
+    Body,
+    Depends,
+    File,
+    Form,
+    HTTPException,
+    Request,
+    UploadFile,
+)
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from PIL import Image, UnidentifiedImageError
@@ -79,6 +88,14 @@ def build_validate_rules_use_case() -> ValidateRulesUseCase:
     return ValidateRulesUseCase(orientation_service)
 
 
+def get_predict_use_case() -> PredictUseCase:
+    return build_predict_use_case()
+
+
+def get_validate_rules_use_case() -> ValidateRulesUseCase:
+    return build_validate_rules_use_case()
+
+
 def read_image_bytes(image_bytes: bytes) -> Any:
     try:
         return Image.open(io.BytesIO(image_bytes)).convert("RGB")
@@ -86,7 +103,11 @@ def read_image_bytes(image_bytes: bytes) -> Any:
         raise HTTPException(status_code=400, detail="Invalid image") from exc
 
 
-def run_prediction(image_bytes: bytes, wagon_type: str) -> dict:
+def run_prediction(
+    image_bytes: bytes,
+    wagon_type: str,
+    use_case: PredictUseCase,
+) -> dict:
     pil_image = read_image_bytes(image_bytes)
     processed_image = use_case.preprocessor(pil_image)
     raw_result = use_case.inference.predict(processed_image)
@@ -105,7 +126,11 @@ def run_prediction(image_bytes: bytes, wagon_type: str) -> dict:
     )
 
 
-def build_batch_orientation(frame_payloads: list[dict], wagon_type: str) -> str:
+def build_batch_orientation(
+    frame_payloads: list[dict],
+    wagon_type: str,
+    use_case: PredictUseCase,
+) -> str:
     aggregated_classes = sorted(
         {
             detected_class
@@ -123,10 +148,6 @@ def build_batch_orientation(frame_payloads: list[dict], wagon_type: str) -> str:
     return use_case.orientation_service.check(prediction, wagon).label
 
 
-use_case = build_predict_use_case()
-validate_rules_use_case = build_validate_rules_use_case()
-
-
 @router.get("/", response_class=HTMLResponse, tags=["ui"])
 async def home(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
@@ -138,15 +159,21 @@ async def healthcheck():
 
 
 @router.post("/predict", tags=["prediction"])
-async def predict(file: UploadFile = File(...), wagon_type: str = Form(...)):
+async def predict(
+    file: UploadFile = File(...),
+    wagon_type: str = Form(...),
+    use_case: PredictUseCase = Depends(get_predict_use_case),
+):
     image_bytes = await file.read()
 
-    return run_prediction(image_bytes, wagon_type)
+    return run_prediction(image_bytes, wagon_type, use_case)
 
 
 @router.post("/predict-batch", tags=["prediction"])
 async def predict_batch(
-    files: list[UploadFile] = File(...), wagon_type: str = Form(...)
+    files: list[UploadFile] = File(...),
+    wagon_type: str = Form(...),
+    use_case: PredictUseCase = Depends(get_predict_use_case),
 ):
     if len(files) == 0:
         raise HTTPException(status_code=400, detail="At least one image is required")
@@ -154,7 +181,7 @@ async def predict_batch(
     frame_predictions = []
     for index, file in enumerate(files, start=1):
         image_bytes = await file.read()
-        frame_payload = run_prediction(image_bytes, wagon_type)
+        frame_payload = run_prediction(image_bytes, wagon_type, use_case)
         frame_predictions.append(
             {
                 "frame_index": index,
@@ -163,13 +190,16 @@ async def predict_batch(
             }
         )
 
-    orientation = build_batch_orientation(frame_predictions, wagon_type)
+    orientation = build_batch_orientation(frame_predictions, wagon_type, use_case)
     return build_batch_prediction_payload(frame_predictions, wagon_type, orientation)
 
 
 @router.post("/validate-rules", tags=["prediction"])
-async def validate_rules(payload: RulesValidationPayload = Body(...)):
-    response = validate_rules_use_case.execute(
+async def validate_rules(
+    payload: RulesValidationPayload = Body(...),
+    use_case: ValidateRulesUseCase = Depends(get_validate_rules_use_case),
+):
+    response = use_case.execute(
         RuleValidationRequest(
             wagon_type=payload.wagon_type,
             detected_classes=payload.detected_classes,
