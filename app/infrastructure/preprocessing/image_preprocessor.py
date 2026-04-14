@@ -1,9 +1,11 @@
+from typing import Any
+
 import cv2
 import numpy as np
 
 
-def preprocess_image(pil_image):
-    image = np.array(pil_image)
+def preprocess_image(image: Any):
+    image = np.array(image)
     image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 
     adjusted = cv2.convertScaleAbs(image, alpha=1.2, beta=30)
