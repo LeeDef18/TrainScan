@@ -18,7 +18,10 @@ from PIL import Image, UnidentifiedImageError
 from pydantic import BaseModel, Field
 
 from app.application.dto.prediction_response import PredictionResponse
-from app.application.dto.rule_validation_request import RuleValidationRequest
+from app.application.dto.rule_validation_request import (
+    RuleValidationRequest,
+    WeightedEvidenceItem,
+)
 from app.application.predict_use_case import PredictUseCase
 from app.application.validate_rules_use_case import ValidateRulesUseCase
 from app.config.config import get_settings
@@ -28,7 +31,10 @@ from app.infrastructure.model.detection_extractor import YoloDetectionExtractor
 from app.infrastructure.model.model_loader import ModelLoader
 from app.infrastructure.model.yolo_inference import YOLOInference
 from app.infrastructure.preprocessing.image_preprocessor import preprocess_image
-from app.infrastructure.rendering.batch_serializer import build_batch_prediction_payload
+from app.infrastructure.rendering.batch_serializer import (
+    build_batch_prediction_payload,
+    build_weighted_evidence,
+)
 from app.infrastructure.rendering.result_serializer import serialize_prediction_response
 from app.infrastructure.repositories.csv_orientation_rules_repository import (
     CsvOrientationRulesRepository,
@@ -44,7 +50,7 @@ templates = Jinja2Templates(
 
 class RulesValidationPayload(BaseModel):
     wagon_type: str = Field(..., min_length=1)
-    detected_classes: list[str] = Field(..., min_length=1)
+    weighted_evidence: dict[str, dict] = Field(..., min_length=1)
 
 
 def build_predict_use_case() -> PredictUseCase:
@@ -127,16 +133,14 @@ def run_prediction(
 
 
 def build_batch_orientation(
-    frame_payloads: list[dict],
+    weighted_evidence: dict[str, dict],
     wagon_type: str,
     use_case: PredictUseCase,
 ) -> str:
     aggregated_classes = sorted(
-        {
-            detected_class
-            for frame_payload in frame_payloads
-            for detected_class in frame_payload["detected_classes"]
-        }
+        class_name
+        for class_name, evidence in weighted_evidence.items()
+        if evidence["score"] >= 0.3
     )
     prediction = PredictionResult(
         detections=[
@@ -190,8 +194,18 @@ async def predict_batch(
             }
         )
 
-    orientation = build_batch_orientation(frame_predictions, wagon_type, use_case)
-    return build_batch_prediction_payload(frame_predictions, wagon_type, orientation)
+    weighted_evidence = build_weighted_evidence(frame_predictions)
+    preliminary_orientation = build_batch_orientation(
+        weighted_evidence,
+        wagon_type,
+        use_case,
+    )
+    return build_batch_prediction_payload(
+        frame_predictions,
+        wagon_type,
+        weighted_evidence,
+        preliminary_orientation,
+    )
 
 
 @router.post("/validate-rules", tags=["prediction"])
@@ -202,16 +216,26 @@ async def validate_rules(
     response = use_case.execute(
         RuleValidationRequest(
             wagon_type=payload.wagon_type,
-            detected_classes=payload.detected_classes,
+            weighted_evidence={
+                class_name: WeightedEvidenceItem(
+                    frames_detected=int(evidence["frames_detected"]),
+                    max_confidence=float(evidence["max_confidence"]),
+                    mean_confidence=float(evidence["mean_confidence"]),
+                    score=float(evidence["score"]),
+                )
+                for class_name, evidence in payload.weighted_evidence.items()
+            },
         )
     )
 
     return {
         "success": True,
         "wagon_type": response.wagon_type,
-        "detected_classes": response.detected_classes,
         "allowed_classes": response.allowed_classes,
-        "matched_classes": response.matched_classes,
-        "missing_classes": response.missing_classes,
-        "orientation_check": response.orientation,
+        "confirmed_classes": response.confirmed_classes,
+        "matched_rule_objects": response.matched_rule_objects,
+        "missing_rule_objects": response.missing_rule_objects,
+        "weak_rule_objects": response.weak_rule_objects,
+        "final_orientation": response.final_orientation,
+        "decision_reason": response.decision_reason,
     }

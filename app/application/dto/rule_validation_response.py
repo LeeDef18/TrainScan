@@ -4,8 +4,10 @@ from dataclasses import dataclass
 @dataclass(frozen=True)
 class RuleValidationResponse:
     wagon_type: str
-    detected_classes: list[str]
     allowed_classes: list[str]
-    matched_classes: list[str]
-    missing_classes: list[str]
-    orientation: str
+    confirmed_classes: list[str]
+    matched_rule_objects: list[str]
+    missing_rule_objects: list[str]
+    weak_rule_objects: list[str]
+    final_orientation: str
+    decision_reason: str

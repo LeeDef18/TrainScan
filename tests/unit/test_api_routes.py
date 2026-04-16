@@ -74,11 +74,16 @@ class DummyValidateRulesUseCase:
             (),
             {
                 "wagon_type": request.wagon_type,
-                "detected_classes": request.detected_classes,
                 "allowed_classes": ["brake_valve", "brake_cylinder"],
-                "matched_classes": ["brake_valve"],
-                "missing_classes": ["brake_cylinder"],
-                "orientation": "A",
+                "confirmed_classes": ["brake_valve"],
+                "matched_rule_objects": ["brake_valve"],
+                "missing_rule_objects": ["brake_cylinder"],
+                "weak_rule_objects": [],
+                "final_orientation": "A",
+                "decision_reason": (
+                    "Matched rule objects: brake_valve. "
+                    "Missing: brake_cylinder. Weak: none"
+                ),
             },
         )()
 
@@ -101,7 +106,15 @@ def make_image_bytes() -> bytes:
 
 def test_validate_rules_endpoint_returns_diagnostics():
     payload = routes.RulesValidationPayload(
-        wagon_type="19-752", detected_classes=["brake_valve"]
+        wagon_type="19-752",
+        weighted_evidence={
+            "brake_valve": {
+                "frames_detected": 2,
+                "max_confidence": 0.9,
+                "mean_confidence": 0.85,
+                "score": 0.6,
+            }
+        },
     )
 
     response = asyncio.run(
@@ -111,8 +124,8 @@ def test_validate_rules_endpoint_returns_diagnostics():
         )
     )
 
-    assert response["matched_classes"] == ["brake_valve"]
-    assert response["orientation_check"] == "A"
+    assert response["matched_rule_objects"] == ["brake_valve"]
+    assert response["final_orientation"] == "A"
 
 
 def test_predict_batch_endpoint_returns_aggregated_response():
@@ -133,6 +146,7 @@ def test_predict_batch_endpoint_returns_aggregated_response():
     )
 
     assert response["frame_count"] == 2
-    assert response["orientation_check"] == "A"
+    assert response["preliminary_orientation"] == "A"
     assert response["summary"]["detections_total"] == 2
     assert response["frames"][0]["filename"] == "frame1.jpg"
+    assert response["weighted_evidence"]["brake_valve"]["frames_detected"] == 2
