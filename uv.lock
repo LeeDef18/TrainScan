@@ -3205,9 +3205,11 @@ dependencies = [
 ]
 
 [package.dev-dependencies]
-dev = [
+airflow = [
     { name = "apache-airflow" },
     { name = "apache-airflow-providers-docker" },
+]
+dev = [
     { name = "black" },
     { name = "flake8" },
     { name = "httpx" },
@@ -3235,9 +3237,11 @@ requires-dist = [
 ]
 
 [package.metadata.requires-dev]
-dev = [
+airflow = [
     { name = "apache-airflow", specifier = "==2.10.0" },
     { name = "apache-airflow-providers-docker", specifier = "==3.11.0" },
+]
+dev = [
     { name = "black", specifier = "==24.8.0" },
     { name = "flake8", specifier = "==7.1.0" },
     { name = "httpx", specifier = "==0.28.1" },
