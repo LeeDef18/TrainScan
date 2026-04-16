@@ -48,9 +48,16 @@ templates = Jinja2Templates(
 )
 
 
+class WeightedEvidencePayload(BaseModel):
+    frames_detected: int = Field(..., ge=0)
+    max_confidence: float = Field(..., ge=0.0, le=1.0)
+    mean_confidence: float = Field(..., ge=0.0, le=1.0)
+    score: float = Field(..., ge=0.0)
+
+
 class RulesValidationPayload(BaseModel):
     wagon_type: str = Field(..., min_length=1)
-    weighted_evidence: dict[str, dict] = Field(..., min_length=1)
+    weighted_evidence: dict[str, WeightedEvidencePayload] = Field(..., min_length=1)
 
 
 def build_predict_use_case() -> PredictUseCase:
@@ -218,10 +225,10 @@ async def validate_rules(
             wagon_type=payload.wagon_type,
             weighted_evidence={
                 class_name: WeightedEvidenceItem(
-                    frames_detected=int(evidence["frames_detected"]),
-                    max_confidence=float(evidence["max_confidence"]),
-                    mean_confidence=float(evidence["mean_confidence"]),
-                    score=float(evidence["score"]),
+                    frames_detected=evidence.frames_detected,
+                    max_confidence=evidence.max_confidence,
+                    mean_confidence=evidence.mean_confidence,
+                    score=evidence.score,
                 )
                 for class_name, evidence in payload.weighted_evidence.items()
             },
