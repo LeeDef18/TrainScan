@@ -77,14 +77,15 @@ scp -r deploy/nginx <user>@<host>:/opt/trainscan/
 Airflow деплоится отдельным compose-файлом в `${SELECTEL_APP_DIR}/airflow/docker-compose.yml`, но наружу напрямую не публикуется.
 Доступ к Airflow UI идет только через общий `Nginx` reverse proxy в сети `trainscan-shared`.
 
-Рекомендуемая схема маршрутизации:
+Текущая схема маршрутизации без доменов:
 
 ```text
-http://<api-domain>/      -> TrainScan API
-http://<airflow-domain>/  -> Airflow Webserver
+http://<server-ip>/           -> TrainScan API
+http://<server-ip>/docs       -> Swagger UI
+http://<server-ip>/airflow/   -> Airflow Webserver
 ```
 
-Если домены еще не настроены, можно временно использовать разные `Host`-заголовки, направленные на IP сервера, но открывать порт `8080` больше не нужно.
+Порт `8080` открывать для внешнего доступа больше не нужно, даже если он разрешен в security group.
 
 Логи Airflow task-ов отправляются в Selectel S3 через тот же аккаунт Object Storage.
 Постоянный named volume для task logs больше не используется: source of truth для логов - S3 и UI Airflow.

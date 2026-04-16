@@ -134,7 +134,7 @@ jobs:
             LOG_LEVEL=${{ vars.LOG_LEVEL || 'INFO' }}
             APP_HOST=0.0.0.0
             APP_PORT=${{ vars.APP_PORT || '8000' }}
-            AIRFLOW_BASE_URL=${{ vars.AIRFLOW_BASE_URL || 'http://airflow.local' }}
+            AIRFLOW_BASE_URL=${{ vars.AIRFLOW_BASE_URL || 'http://139.100.195.58/airflow' }}
             TRAINSCAN_API_URL=${{ vars.TRAINSCAN_API_URL || 'http://nginx' }}
             AIRFLOW_S3_LOG_BUCKET=${{ vars.AIRFLOW_S3_LOG_BUCKET }}
             AIRFLOW_S3_LOG_PREFIX=${{ vars.AIRFLOW_S3_LOG_PREFIX || 'trainscan-airflow' }}
@@ -192,7 +192,7 @@ jobs:
                   AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:${{ secrets.AIRFLOW_DB_PASSWORD }}@airflow-postgres:5432/airflow
                   AIRFLOW_CONN_AIRFLOW_S3_LOGS: aws://?endpoint_url=${{ vars.S3_ENDPOINT }}&aws_access_key_id=${{ secrets.S3_KEY }}&aws_secret_access_key=${{ secrets.S3_SECRET }}
                   AIRFLOW__CORE__HOSTNAME_CALLABLE: socket.getfqdn
-                  AIRFLOW__WEBSERVER__BASE_URL: ${{ vars.AIRFLOW_BASE_URL || 'http://airflow.local' }}
+                  AIRFLOW__WEBSERVER__BASE_URL: ${{ vars.AIRFLOW_BASE_URL || 'http://139.100.195.58/airflow' }}
                   AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "true"
                   AIRFLOW__LOGGING__BASE_LOG_FOLDER: /opt/airflow/logs
                   AIRFLOW__LOGGING__REMOTE_LOGGING: "true"
@@ -245,7 +245,7 @@ jobs:
                   AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:${{ secrets.AIRFLOW_DB_PASSWORD }}@airflow-postgres:5432/airflow
                   AIRFLOW_CONN_AIRFLOW_S3_LOGS: aws://?endpoint_url=${{ vars.S3_ENDPOINT }}&aws_access_key_id=${{ secrets.S3_KEY }}&aws_secret_access_key=${{ secrets.S3_SECRET }}
                   AIRFLOW__CORE__HOSTNAME_CALLABLE: socket.getfqdn
-                  AIRFLOW__WEBSERVER__BASE_URL: ${{ vars.AIRFLOW_BASE_URL || 'http://airflow.local' }}
+                  AIRFLOW__WEBSERVER__BASE_URL: ${{ vars.AIRFLOW_BASE_URL || 'http://139.100.195.58/airflow' }}
                   AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "true"
                   AIRFLOW__LOGGING__BASE_LOG_FOLDER: /opt/airflow/logs
                   AIRFLOW__LOGGING__REMOTE_LOGGING: "true"
@@ -282,7 +282,7 @@ jobs:
                   AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:${{ secrets.AIRFLOW_DB_PASSWORD }}@airflow-postgres:5432/airflow
                   AIRFLOW_CONN_AIRFLOW_S3_LOGS: aws://?endpoint_url=${{ vars.S3_ENDPOINT }}&aws_access_key_id=${{ secrets.S3_KEY }}&aws_secret_access_key=${{ secrets.S3_SECRET }}
                   AIRFLOW__CORE__HOSTNAME_CALLABLE: socket.getfqdn
-                  AIRFLOW__WEBSERVER__BASE_URL: ${{ vars.AIRFLOW_BASE_URL || 'http://airflow.local' }}
+                  AIRFLOW__WEBSERVER__BASE_URL: ${{ vars.AIRFLOW_BASE_URL || 'http://139.100.195.58/airflow' }}
                   AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "true"
                   AIRFLOW__LOGGING__BASE_LOG_FOLDER: /opt/airflow/logs
                   AIRFLOW__LOGGING__REMOTE_LOGGING: "true"
@@ -359,6 +359,28 @@ jobs:
 
                 client_max_body_size 20m;
 
+                location = /airflow {
+                    return 301 /airflow/;
+                }
+
+                location /airflow/ {
+                    proxy_pass http://airflow_webserver/;
+                    proxy_http_version 1.1;
+                    proxy_set_header Host $host;
+                    proxy_set_header X-Real-IP $remote_addr;
+                    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                    proxy_set_header X-Forwarded-Proto $scheme;
+                    proxy_set_header X-Forwarded-Host $host;
+                    proxy_set_header X-Forwarded-Port $server_port;
+                    proxy_set_header X-Forwarded-Prefix /airflow;
+                    proxy_set_header Upgrade $http_upgrade;
+                    proxy_set_header Connection "upgrade";
+                    proxy_redirect / /airflow/;
+                    proxy_read_timeout 300s;
+                    proxy_connect_timeout 60s;
+                    proxy_send_timeout 300s;
+                }
+
                 location / {
                     proxy_pass http://trainscan_api;
                     proxy_http_version 1.1;
@@ -372,30 +394,6 @@ jobs:
                 }
             }
 
-            server {
-                listen 80;
-                listen [::]:80;
-                server_name airflow._;
-
-                client_max_body_size 20m;
-
-                location / {
-                    proxy_pass http://airflow_webserver;
-                    proxy_http_version 1.1;
-                    proxy_set_header Host $host;
-                    proxy_set_header X-Real-IP $remote_addr;
-                    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-                    proxy_set_header X-Forwarded-Proto $scheme;
-                    proxy_set_header X-Forwarded-Host $host;
-                    proxy_set_header X-Forwarded-Port $server_port;
-                    proxy_set_header Upgrade $http_upgrade;
-                    proxy_set_header Connection "upgrade";
-                    proxy_redirect off;
-                    proxy_read_timeout 300s;
-                    proxy_connect_timeout 60s;
-                    proxy_send_timeout 300s;
-                }
-            }
             EOF
             docker login ${{ env.REGISTRY }} -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
             docker network inspect trainscan-shared >/dev/null 2>&1 || docker network create trainscan-shared
