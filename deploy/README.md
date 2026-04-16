@@ -6,7 +6,7 @@ production-like деплой строится так:
 - модель и таблица правил остаются в `Selectel S3`
 - GitHub Actions после `push` в `main` подключается по `SSH` к VPS
 - на VPS выполняется `docker compose pull && docker compose up -d`
-- внешний трафик идет через `Nginx` на `80` порт, а FastAPI остается внутренним сервисом внутри compose-сети
+- внешний трафик идет через `Nginx` на `80` порт, а FastAPI и Airflow Webserver остаются внутренними сервисами внутри compose-сети
 
 ## Что должно лежать на VPS
 
@@ -74,15 +74,17 @@ scp -r deploy/nginx <user>@<host>:/opt/trainscan/
 
 ## Airflow на VPS
 
-Airflow деплоится отдельным compose-файлом в `${SELECTEL_APP_DIR}/airflow/docker-compose.yml` и публикуется наружу напрямую на `8080`.
+Airflow деплоится отдельным compose-файлом в `${SELECTEL_APP_DIR}/airflow/docker-compose.yml`, но наружу напрямую не публикуется.
+Доступ к Airflow UI идет только через общий `Nginx` reverse proxy в сети `trainscan-shared`.
 
-После деплоя UI будет доступен по адресу:
+Рекомендуемая схема маршрутизации:
 
 ```text
-http://<server-ip>:8080/
+http://<api-domain>/      -> TrainScan API
+http://<airflow-domain>/  -> Airflow Webserver
 ```
 
-Для внешнего доступа нужно открыть inbound порт `8080` в группе безопасности сервера.
+Если домены еще не настроены, можно временно использовать разные `Host`-заголовки, направленные на IP сервера, но открывать порт `8080` больше не нужно.
 
 Логи Airflow task-ов отправляются в Selectel S3 через тот же аккаунт Object Storage.
 Постоянный named volume для task logs больше не используется: source of truth для логов - S3 и UI Airflow.

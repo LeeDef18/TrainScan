@@ -100,8 +100,6 @@ services:
       - /opt/trainscan/project:/opt/project
       - /var/run/docker.sock:/var/run/docker.sock
     command: webserver
-    ports:
-      - "8080:8080"
     networks:
       - airflow-internal
       - trainscan-shared

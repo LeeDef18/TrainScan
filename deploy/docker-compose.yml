@@ -21,6 +21,8 @@ services:
     depends_on:
       trainscan:
         condition: service_healthy
+      trainscan-airflow-webserver:
+        condition: service_started
     ports:
       - "80:80"
     volumes:
