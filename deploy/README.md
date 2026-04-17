@@ -74,18 +74,19 @@ scp -r deploy/nginx <user>@<host>:/opt/trainscan/
 
 ## Airflow на VPS
 
-Airflow деплоится отдельным compose-файлом в `${SELECTEL_APP_DIR}/airflow/docker-compose.yml`, но наружу напрямую не публикуется.
-Доступ к Airflow UI идет только через общий `Nginx` reverse proxy в сети `trainscan-shared`.
+Airflow деплоится отдельным compose-файлом в `${SELECTEL_APP_DIR}/airflow/docker-compose.yml`, но наружу напрямую не публикуется на своем внутреннем порту `8080`.
+Доступ к Airflow UI идет через общий `Nginx` reverse proxy в сети `trainscan-shared`, но на отдельном внешнем порту `81`.
 
 Текущая схема маршрутизации без доменов:
 
 ```text
-http://<server-ip>/           -> TrainScan API
-http://<server-ip>/docs       -> Swagger UI
-http://<server-ip>/airflow/   -> Airflow Webserver
+http://<server-ip>/        -> TrainScan API
+http://<server-ip>/docs    -> Swagger UI
+http://<server-ip>:81/     -> Airflow Webserver
 ```
 
-Порт `8080` открывать для внешнего доступа больше не нужно, даже если он разрешен в security group.
+Внешний порт `8080` для Airflow больше не нужен. Если он открыт в security group, его можно закрыть.
+Для доступа к Airflow нужно открыть внешний порт `81`.
 
 Логи Airflow task-ов отправляются в Selectel S3 через тот же аккаунт Object Storage.
 Постоянный named volume для task logs больше не используется: source of truth для логов - S3 и UI Airflow.
