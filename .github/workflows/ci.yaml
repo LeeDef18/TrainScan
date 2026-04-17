@@ -193,6 +193,7 @@ jobs:
                   AIRFLOW_CONN_AIRFLOW_S3_LOGS: aws://?endpoint_url=${{ vars.S3_ENDPOINT }}&aws_access_key_id=${{ secrets.S3_KEY }}&aws_secret_access_key=${{ secrets.S3_SECRET }}
                   AIRFLOW__CORE__HOSTNAME_CALLABLE: socket.getfqdn
                   AIRFLOW__WEBSERVER__BASE_URL: ${{ vars.AIRFLOW_BASE_URL || 'http://139.100.195.58/airflow' }}
+                  AIRFLOW__WEBSERVER__ENABLE_PROXY_FIX: "true"
                   AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "true"
                   AIRFLOW__LOGGING__BASE_LOG_FOLDER: /opt/airflow/logs
                   AIRFLOW__LOGGING__REMOTE_LOGGING: "true"
@@ -246,6 +247,7 @@ jobs:
                   AIRFLOW_CONN_AIRFLOW_S3_LOGS: aws://?endpoint_url=${{ vars.S3_ENDPOINT }}&aws_access_key_id=${{ secrets.S3_KEY }}&aws_secret_access_key=${{ secrets.S3_SECRET }}
                   AIRFLOW__CORE__HOSTNAME_CALLABLE: socket.getfqdn
                   AIRFLOW__WEBSERVER__BASE_URL: ${{ vars.AIRFLOW_BASE_URL || 'http://139.100.195.58/airflow' }}
+                  AIRFLOW__WEBSERVER__ENABLE_PROXY_FIX: "true"
                   AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "true"
                   AIRFLOW__LOGGING__BASE_LOG_FOLDER: /opt/airflow/logs
                   AIRFLOW__LOGGING__REMOTE_LOGGING: "true"
@@ -283,6 +285,7 @@ jobs:
                   AIRFLOW_CONN_AIRFLOW_S3_LOGS: aws://?endpoint_url=${{ vars.S3_ENDPOINT }}&aws_access_key_id=${{ secrets.S3_KEY }}&aws_secret_access_key=${{ secrets.S3_SECRET }}
                   AIRFLOW__CORE__HOSTNAME_CALLABLE: socket.getfqdn
                   AIRFLOW__WEBSERVER__BASE_URL: ${{ vars.AIRFLOW_BASE_URL || 'http://139.100.195.58/airflow' }}
+                  AIRFLOW__WEBSERVER__ENABLE_PROXY_FIX: "true"
                   AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "true"
                   AIRFLOW__LOGGING__BASE_LOG_FOLDER: /opt/airflow/logs
                   AIRFLOW__LOGGING__REMOTE_LOGGING: "true"
@@ -374,9 +377,11 @@ jobs:
                     proxy_set_header X-Forwarded-Host $host;
                     proxy_set_header X-Forwarded-Port $server_port;
                     proxy_set_header X-Forwarded-Prefix /airflow;
+                    proxy_set_header X-Script-Name /airflow;
                     proxy_set_header Upgrade $http_upgrade;
                     proxy_set_header Connection "upgrade";
                     proxy_redirect / /airflow/;
+                    proxy_cookie_path / /airflow/;
                     proxy_set_header Accept-Encoding "";
                     sub_filter_once off;
                     sub_filter_types text/html text/css application/javascript;
