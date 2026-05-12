@@ -430,7 +430,7 @@ def run_two_camera_prediction(
             use_case,
             RuleDecisionContext(
                 orientation_service=use_case.orientation_service,
-                no_match_orientation="B",
+                no_match_orientation="UNDEFINED",
                 decision_table="rule_table.csv",
             ),
         )

@@ -228,6 +228,23 @@ def test_predict_endpoint_returns_a_when_left_side_matches():
     )
 
 
+def test_predict_endpoint_returns_undefined_for_regular_without_matches():
+    image_bytes = make_image_bytes()
+
+    response = asyncio.run(
+        routes.predict(
+            right_file=cast(Any, DummyUploadFile("right.jpg", image_bytes)),
+            left_file=cast(Any, DummyUploadFile("left.jpg", image_bytes)),
+            wagon_type="19-752",
+            use_case=cast(Any, DummyPredictUseCase(matched_side="none")),
+        )
+    )
+
+    assert response["decision_table"] == "rule_table.csv"
+    assert response["orientation_check"] == "UNDEFINED"
+    assert response["manual_review_required"] is True
+
+
 def test_predict_endpoint_uses_exception_table_before_regular_rules():
     image_bytes = make_image_bytes()
 
