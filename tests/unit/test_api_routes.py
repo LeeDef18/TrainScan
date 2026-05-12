@@ -30,9 +30,33 @@ class DummyRawResult:
         return np.zeros((8, 8, 3), dtype=np.uint8)
 
 
+class DummyRepository:
+    def __init__(self, has_wagon=False, rules=None):
+        self._has_wagon = has_wagon
+        self._rules = rules or ["brake_valve"]
+
+    def has_wagon(self, wagon_type):
+        return self._has_wagon
+
+    def get_rules_for_wagon_side(self, wagon_type, side):
+        return self._rules
+
+    def get_rules_for_wagon(self, wagon_type):
+        return self._rules
+
+
+class DummyRuleRepositories:
+    def __init__(self, table="regular"):
+        self.regular = DummyRepository(table == "regular")
+        self.exceptions = DummyRepository(table == "exceptions")
+        hoppers_rules = ["other_class"] if table == "hoppers" else ["brake_valve"]
+        self.hoppers = DummyRepository(table == "hoppers", hoppers_rules)
+
+
 class DummyPredictUseCase:
-    def __init__(self, matched_side="right"):
+    def __init__(self, matched_side="right", table="regular"):
         self.matched_side = matched_side
+        self.rule_repositories = DummyRuleRepositories(table)
         self.preprocessor = lambda image: image
         self.inference = self
         self.left_inference = self
@@ -199,4 +223,62 @@ def test_predict_endpoint_returns_a_when_left_side_matches():
     assert response["left"]["rule_match"] is True
     assert response["left"]["allowed_rule_objects"] == ["brake_valve"]
     assert response["left"]["matched_rule_objects"] == ["brake_valve"]
-    assert response["decision_reason"] == "Matched objects_left with best_2.pt"
+    assert response["decision_reason"] == (
+        "Matched objects_left with best_2.pt in rule_table.csv"
+    )
+
+
+def test_predict_endpoint_uses_exception_table_before_regular_rules():
+    image_bytes = make_image_bytes()
+
+    response = asyncio.run(
+        routes.predict(
+            right_file=cast(Any, DummyUploadFile("right.jpg", image_bytes)),
+            left_file=cast(Any, DummyUploadFile("left.jpg", image_bytes)),
+            wagon_type="13-exception",
+            use_case=cast(Any, DummyPredictUseCase(table="exceptions")),
+        )
+    )
+
+    assert response["decision_table"] == "exception_wagon.csv"
+    assert response["orientation_check"] == "A"
+    assert response["left"]["matched_rule_objects"] == ["brake_valve"]
+
+
+def test_predict_endpoint_returns_b_for_hopper_without_matches():
+    image_bytes = make_image_bytes()
+
+    response = asyncio.run(
+        routes.predict(
+            right_file=cast(Any, DummyUploadFile("right.jpg", image_bytes)),
+            left_file=cast(Any, DummyUploadFile("left.jpg", image_bytes)),
+            wagon_type="hopper",
+            use_case=cast(
+                Any,
+                DummyPredictUseCase(matched_side="none", table="hoppers"),
+            ),
+        )
+    )
+
+    assert response["decision_table"] == "hoppers_wagon_fis.csv"
+    assert response["orientation_check"] == "B"
+    assert response["manual_review_required"] is False
+
+
+def test_predict_endpoint_rejects_unknown_wagon_type():
+    image_bytes = make_image_bytes()
+
+    try:
+        asyncio.run(
+            routes.predict(
+                right_file=cast(Any, DummyUploadFile("right.jpg", image_bytes)),
+                left_file=cast(Any, DummyUploadFile("left.jpg", image_bytes)),
+                wagon_type="missing",
+                use_case=cast(Any, DummyPredictUseCase(table="missing")),
+            )
+        )
+    except routes.HTTPException as exc:
+        assert exc.status_code == 400
+        assert exc.detail == "Unknown wagon type"
+    else:
+        raise AssertionError("Unknown wagon type must raise HTTPException")

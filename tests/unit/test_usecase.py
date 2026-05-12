@@ -1,4 +1,9 @@
-from app.application.predict_use_case import PredictInferences, PredictUseCase
+from app.application.predict_use_case import (
+    PredictInferences,
+    PredictRuleRepositories,
+    PredictServices,
+    PredictUseCase,
+)
 from app.domain.entities.prediction import Detection, Wagon
 from app.domain.services.orientation_service import OrientationService
 from app.infrastructure.model.detection_extractor import YoloDetectionExtractor
@@ -32,9 +37,16 @@ def test_usecase_returns_prediction_response(tmp_path):
     inference = DummyInference()
     use_case = PredictUseCase(
         inferences=PredictInferences(right=inference, left=inference),
+        rule_repositories=PredictRuleRepositories(
+            regular=repository,
+            exceptions=repository,
+            hoppers=repository,
+        ),
         preprocessor=lambda image: image,
-        orientation_service=OrientationService(repository),
-        detection_extractor=YoloDetectionExtractor(),
+        services=PredictServices(
+            orientation=OrientationService(repository),
+            detection_extractor=YoloDetectionExtractor(),
+        ),
     )
 
     response = use_case.execute("img", "A")

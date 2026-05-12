@@ -51,19 +51,35 @@ def test_csv_repository_reads_actual_semicolon_rule_table(tmp_path):
     ]
 
 
+def test_csv_repository_reads_models_column(tmp_path):
+    file = tmp_path / "exceptions.csv"
+    file.write_text("Models\n13-192\n", encoding="utf-8")
+
+    repository = CsvOrientationRulesRepository(str(file))
+
+    assert repository.has_wagon("13-192") is True
+    assert repository.has_wagon("missing") is False
+
+
 def test_get_settings_reads_environment(monkeypatch):
     get_settings.cache_clear()
     monkeypatch.setenv("MODEL_PATH", "custom-model.pt")
     monkeypatch.setenv("MODEL_2_PATH", "custom-model-2.pt")
     monkeypatch.setenv("MODEL_BUCKET", "model-bucket")
     monkeypatch.setenv("RULE_TABLE_PATH", "rules.csv")
+    monkeypatch.setenv("EXCEPTION_TABLE_PATH", "exceptions.csv")
+    monkeypatch.setenv("HOPPERS_TABLE_PATH", "hoppers.csv")
     monkeypatch.setenv("RULE_TABLE_BUCKET", "rules-bucket")
+    monkeypatch.setenv("EXCEPTION_TABLE_BUCKET", "exceptions-bucket")
+    monkeypatch.setenv("HOPPERS_TABLE_BUCKET", "hoppers-bucket")
     monkeypatch.setenv("S3_ENDPOINT", "https://example.com")
     monkeypatch.delenv("S3_KEY", raising=False)
     monkeypatch.delenv("S3_SECRET", raising=False)
     monkeypatch.setenv("MODEL_KEY", "weights.pt")
     monkeypatch.setenv("MODEL_2_KEY", "weights-2.pt")
     monkeypatch.setenv("RULE_TABLE_KEY", "orientation.csv")
+    monkeypatch.setenv("EXCEPTION_TABLE_KEY", "exception_wagon.csv")
+    monkeypatch.setenv("HOPPERS_TABLE_KEY", "hoppers_wagon_fis.csv")
     monkeypatch.setenv("MODEL_CONF", "0.5")
     monkeypatch.setenv("MODEL_IOU", "0.6")
     monkeypatch.setenv("APP_ENV", "test")
@@ -77,11 +93,17 @@ def test_get_settings_reads_environment(monkeypatch):
     assert settings.second_model_path == "custom-model-2.pt"
     assert settings.model_bucket == "model-bucket"
     assert settings.rule_table_path == "rules.csv"
+    assert settings.exception_table_path == "exceptions.csv"
+    assert settings.hoppers_table_path == "hoppers.csv"
     assert settings.rule_table_bucket == "rules-bucket"
+    assert settings.exception_table_bucket == "exceptions-bucket"
+    assert settings.hoppers_table_bucket == "hoppers-bucket"
     assert settings.s3_endpoint == "https://example.com"
     assert settings.model_key == "weights.pt"
     assert settings.second_model_key == "weights-2.pt"
     assert settings.rule_table_key == "orientation.csv"
+    assert settings.exception_table_key == "exception_wagon.csv"
+    assert settings.hoppers_table_key == "hoppers_wagon_fis.csv"
     assert settings.conf == 0.5
     assert settings.iou == 0.6
     assert settings.app_env == "test"

@@ -2,6 +2,9 @@ from typing import Protocol
 
 
 class OrientationRulesRepository(Protocol):
+    def has_wagon(self, wagon_type: str) -> bool:
+        """Return whether wagon type exists in rule table."""
+
     def get_rules_for_wagon(self, wagon_type: str) -> list[str]:
         """Return allowed orientation classes for wagon type."""
 

@@ -19,7 +19,7 @@ class CsvOrientationRulesRepository(OrientationRulesRepository):
             csv_file.seek(0)
             reader = csv.DictReader(csv_file, delimiter=self._detect_delimiter(sample))
             for row in reader:
-                wagon_type = (row.get("Model") or "").strip()
+                wagon_type = self._get_model_value(row)
                 if not wagon_type:
                     continue
 
@@ -32,6 +32,10 @@ class CsvOrientationRulesRepository(OrientationRulesRepository):
                 }
 
         return rules
+
+    @staticmethod
+    def _get_model_value(row: dict[str, str]) -> str:
+        return (row.get("Model") or row.get("Models") or "").strip()
 
     @staticmethod
     def _detect_delimiter(sample: str) -> str:
@@ -63,3 +67,6 @@ class CsvOrientationRulesRepository(OrientationRulesRepository):
 
     def get_rules_for_wagon_side(self, wagon_type: str, side: str) -> list[str]:
         return self._rules.get(wagon_type, {}).get(side, [])
+
+    def has_wagon(self, wagon_type: str) -> bool:
+        return wagon_type in self._rules

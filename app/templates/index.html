@@ -368,6 +368,11 @@
             color: var(--bad);
         }
 
+        .orientation.UNDEFINED {
+            background: rgba(143, 76, 47, 0.12);
+            color: var(--accent-dark);
+        }
+
         .predictions {
             display: grid;
             gap: 12px;
@@ -679,7 +684,7 @@
 
                 const orientationDiv = document.getElementById("orientationResult");
                 orientationDiv.textContent = `Ориентация: ${result.orientation_check}`;
-                orientationDiv.className = `orientation ${result.orientation_check === "A" ? "A" : "B"}`;
+                orientationDiv.className = `orientation ${result.orientation_check}`;
 
                 results.style.display = "block";
                 setStatus("Анализ завершен успешно.");

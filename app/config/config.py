@@ -19,13 +19,37 @@ class Settings(BaseSettings):
         default="data/rules/rule_table.csv",
         alias="RULE_TABLE_PATH",
     )
+    exception_table_path: str = Field(
+        default="data/rules/exception_wagon.csv",
+        alias="EXCEPTION_TABLE_PATH",
+    )
+    hoppers_table_path: str = Field(
+        default="data/rules/hoppers_wagon_fis.csv",
+        alias="HOPPERS_TABLE_PATH",
+    )
     rule_table_bucket: str = Field(default="table-of-rule", alias="RULE_TABLE_BUCKET")
+    exception_table_bucket: str = Field(
+        default="wagon-exceptions",
+        alias="EXCEPTION_TABLE_BUCKET",
+    )
+    hoppers_table_bucket: str = Field(
+        default="wagon-hoppers",
+        alias="HOPPERS_TABLE_BUCKET",
+    )
     s3_endpoint: str = Field(default="https://s3.selcdn.ru", alias="S3_ENDPOINT")
     s3_key: str | None = Field(default=None, alias="S3_KEY")
     s3_secret: str | None = Field(default=None, alias="S3_SECRET")
     model_key: str = Field(default="best.pt", alias="MODEL_KEY")
     second_model_key: str = Field(default="best_2.pt", alias="MODEL_2_KEY")
     rule_table_key: str = Field(default="rule_table.csv", alias="RULE_TABLE_KEY")
+    exception_table_key: str = Field(
+        default="exception_wagon.csv",
+        alias="EXCEPTION_TABLE_KEY",
+    )
+    hoppers_table_key: str = Field(
+        default="hoppers_wagon_fis.csv",
+        alias="HOPPERS_TABLE_KEY",
+    )
     conf: float = Field(default=0.25, alias="MODEL_CONF")
     iou: float = Field(default=0.45, alias="MODEL_IOU")
     app_env: str = Field(default="dev", alias="APP_ENV")

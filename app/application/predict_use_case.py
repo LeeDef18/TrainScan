@@ -5,6 +5,9 @@ from app.application.ports.detection_extractor_port import DetectionExtractorPor
 from app.application.ports.inference_port import InferencePort
 from app.application.ports.preprocessor_port import PreprocessorPort
 from app.domain.entities.prediction import Wagon
+from app.domain.repositories.orientation_rules_repository import (
+    OrientationRulesRepository,
+)
 from app.domain.services.orientation_service import OrientationService
 
 
@@ -14,19 +17,33 @@ class PredictInferences:
     left: InferencePort
 
 
+@dataclass(frozen=True)
+class PredictRuleRepositories:
+    regular: OrientationRulesRepository
+    exceptions: OrientationRulesRepository
+    hoppers: OrientationRulesRepository
+
+
+@dataclass(frozen=True)
+class PredictServices:
+    orientation: OrientationService
+    detection_extractor: DetectionExtractorPort
+
+
 class PredictUseCase:
     def __init__(
         self,
         inferences: PredictInferences,
+        rule_repositories: PredictRuleRepositories,
         preprocessor: PreprocessorPort,
-        orientation_service: OrientationService,
-        detection_extractor: DetectionExtractorPort,
+        services: PredictServices,
     ):
         self.inference = inferences.right
         self.left_inference = inferences.left
+        self.rule_repositories = rule_repositories
         self.preprocessor = preprocessor
-        self.orientation_service = orientation_service
-        self.detection_extractor = detection_extractor
+        self.orientation_service = services.orientation
+        self.detection_extractor = services.detection_extractor
 
     def execute(self, pil_image, wagon_type: str) -> PredictionResponse:
         processed_image = self.preprocessor(pil_image)
