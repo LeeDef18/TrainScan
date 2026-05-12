@@ -19,17 +19,36 @@ class DummyStorage:
 def test_csv_repository_reads_multiple_objects(tmp_path):
     file = tmp_path / "rules.csv"
     file.write_text(
-        "Model;objects_left;objects_right;;\n" "A;door;window;;\n" "B;signal;None;;\n",
+        "Model;objects_left;objects_right;;\n"
+        "A;door, valve;window;;\n"
+        "B;signal;None;;\n",
         encoding="utf-8",
     )
 
     repository = CsvOrientationRulesRepository(str(file))
 
-    assert repository.get_rules_for_wagon("A") == ["door", "window"]
-    assert repository.get_rules_for_wagon_side("A", "left") == ["door"]
+    assert repository.get_rules_for_wagon("A") == ["door", "valve", "window"]
+    assert repository.get_rules_for_wagon_side("A", "left") == ["door", "valve"]
     assert repository.get_rules_for_wagon_side("A", "right") == ["window"]
     assert repository.get_rules_for_wagon_side("B", "right") == []
     assert repository.get_rules_for_wagon("missing") == []
+
+
+def test_csv_repository_reads_actual_semicolon_rule_table(tmp_path):
+    file = tmp_path / "rule_table.csv"
+    file.write_text(
+        "Model;objects_left;objects_right;;\n"
+        "13-935A-03;brake_cylinder,emergency_reservoir;None;;\n",
+        encoding="utf-8",
+    )
+
+    repository = CsvOrientationRulesRepository(str(file))
+
+    assert repository.get_rules_for_wagon_side("13-935A-03", "right") == []
+    assert repository.get_rules_for_wagon_side("13-935A-03", "left") == [
+        "brake_cylinder",
+        "emergency_reservoir",
+    ]
 
 
 def test_get_settings_reads_environment(monkeypatch):

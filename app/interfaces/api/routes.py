@@ -192,13 +192,23 @@ def run_two_camera_prediction(
             for prediction in right_payload["predictions"]
         ]
     )
-    right_matched = use_case.orientation_service.has_match_for_side(
+    right_allowed_classes = use_case.orientation_service.get_allowed_classes_for_side(
+        wagon,
+        "right",
+    )
+    right_matched_classes = use_case.orientation_service.get_matched_classes_for_side(
         right_prediction,
         wagon,
         "right",
     )
+    right_matched = bool(right_matched_classes)
 
     left_payload = None
+    left_allowed_classes = use_case.orientation_service.get_allowed_classes_for_side(
+        wagon,
+        "left",
+    )
+    left_matched_classes: list[str] = []
     left_matched = False
     if not right_matched:
         left_payload = run_side_prediction(
@@ -217,11 +227,14 @@ def run_two_camera_prediction(
                 for prediction in left_payload["predictions"]
             ]
         )
-        left_matched = use_case.orientation_service.has_match_for_side(
-            left_prediction,
-            wagon,
-            "left",
+        left_matched_classes = (
+            use_case.orientation_service.get_matched_classes_for_side(
+                left_prediction,
+                wagon,
+                "left",
+            )
         )
+        left_matched = bool(left_matched_classes)
 
     return {
         "success": True,
@@ -240,6 +253,8 @@ def run_two_camera_prediction(
             **right_payload,
             "matched_rule_side": "objects_right",
             "model_key": "best.pt",
+            "allowed_rule_objects": right_allowed_classes,
+            "matched_rule_objects": right_matched_classes,
             "rule_match": right_matched,
         },
         "left": (
@@ -249,6 +264,8 @@ def run_two_camera_prediction(
                 **left_payload,
                 "matched_rule_side": "objects_left",
                 "model_key": "best_2.pt",
+                "allowed_rule_objects": left_allowed_classes,
+                "matched_rule_objects": left_matched_classes,
                 "rule_match": left_matched,
             }
         ),

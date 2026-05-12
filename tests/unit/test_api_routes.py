@@ -71,6 +71,12 @@ class DummyPredictUseCase:
     def has_match_for_side(self, prediction, wagon, side):
         return side == self.matched_side
 
+    def get_allowed_classes_for_side(self, wagon, side):
+        return ["brake_valve"]
+
+    def get_matched_classes_for_side(self, prediction, wagon, side):
+        return ["brake_valve"] if side == self.matched_side else []
+
 
 class DummyValidateRulesUseCase:
     def execute(self, request):
@@ -171,6 +177,8 @@ def test_predict_endpoint_uses_two_camera_payload():
 
     assert response["orientation_check"] == "A"
     assert response["right"]["rule_match"] is True
+    assert response["right"]["allowed_rule_objects"] == ["brake_valve"]
+    assert response["right"]["matched_rule_objects"] == ["brake_valve"]
     assert response["left"] is None
 
 
@@ -189,4 +197,6 @@ def test_predict_endpoint_returns_a_when_left_side_matches():
     assert response["orientation_check"] == "A"
     assert response["right"]["rule_match"] is False
     assert response["left"]["rule_match"] is True
+    assert response["left"]["allowed_rule_objects"] == ["brake_valve"]
+    assert response["left"]["matched_rule_objects"] == ["brake_valve"]
     assert response["decision_reason"] == "Matched objects_left with best_2.pt"

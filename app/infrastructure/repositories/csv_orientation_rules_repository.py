@@ -14,11 +14,10 @@ class CsvOrientationRulesRepository(OrientationRulesRepository):
     def _load_rules(self) -> dict[str, dict[str, list[str]]]:
         rules: dict[str, dict[str, list[str]]] = {}
 
-        with open(self.file_path, encoding="utf-8") as csv_file:
+        with open(self.file_path, encoding="utf-8-sig") as csv_file:
             sample = csv_file.read(4096)
             csv_file.seek(0)
-            dialect = csv.Sniffer().sniff(sample, delimiters=",;")
-            reader = csv.DictReader(csv_file, dialect=dialect)
+            reader = csv.DictReader(csv_file, delimiter=self._detect_delimiter(sample))
             for row in reader:
                 wagon_type = (row.get("Model") or "").strip()
                 if not wagon_type:
@@ -33,6 +32,13 @@ class CsvOrientationRulesRepository(OrientationRulesRepository):
                 }
 
         return rules
+
+    @staticmethod
+    def _detect_delimiter(sample: str) -> str:
+        header = sample.splitlines()[0] if sample else ""
+        if ";" in header:
+            return ";"
+        return ","
 
     @staticmethod
     def _parse_objects(value: str | None) -> list[str]:
