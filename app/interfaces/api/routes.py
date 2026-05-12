@@ -226,7 +226,7 @@ def run_two_camera_prediction(
     return {
         "success": True,
         "wagon_type": wagon_type,
-        "orientation_check": "A" if right_matched else "B",
+        "orientation_check": "A" if right_matched or left_matched else "B",
         "decision_reason": (
             "Matched objects_right with best.pt"
             if right_matched

@@ -31,7 +31,8 @@ class DummyRawResult:
 
 
 class DummyPredictUseCase:
-    def __init__(self):
+    def __init__(self, matched_side="right"):
+        self.matched_side = matched_side
         self.preprocessor = lambda image: image
         self.inference = self
         self.left_inference = self
@@ -68,7 +69,7 @@ class DummyPredictUseCase:
         return type("OrientationLike", (), {"label": "A"})()
 
     def has_match_for_side(self, prediction, wagon, side):
-        return side == "right"
+        return side == self.matched_side
 
 
 class DummyValidateRulesUseCase:
@@ -171,3 +172,21 @@ def test_predict_endpoint_uses_two_camera_payload():
     assert response["orientation_check"] == "A"
     assert response["right"]["rule_match"] is True
     assert response["left"] is None
+
+
+def test_predict_endpoint_returns_a_when_left_side_matches():
+    image_bytes = make_image_bytes()
+
+    response = asyncio.run(
+        routes.predict(
+            right_file=cast(Any, DummyUploadFile("right.jpg", image_bytes)),
+            left_file=cast(Any, DummyUploadFile("left.jpg", image_bytes)),
+            wagon_type="19-752",
+            use_case=cast(Any, DummyPredictUseCase(matched_side="left")),
+        )
+    )
+
+    assert response["orientation_check"] == "A"
+    assert response["right"]["rule_match"] is False
+    assert response["left"]["rule_match"] is True
+    assert response["decision_reason"] == "Matched objects_left with best_2.pt"

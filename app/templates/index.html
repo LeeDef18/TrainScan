@@ -193,6 +193,19 @@
             transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
         }
 
+        .upload-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+        }
+
+        .upload small {
+            color: var(--accent-dark);
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
         .upload:hover,
         .upload.dragover {
             transform: translateY(-2px);
@@ -383,7 +396,8 @@
 
         @media (max-width: 960px) {
             .hero,
-            .grid {
+            .grid,
+            .upload-grid {
                 grid-template-columns: 1fr;
             }
 
@@ -408,8 +422,8 @@
                 <div class="eyebrow">TrainScan / Wagon Orientation</div>
                 <h1>Определение ориентации вагона по изображению</h1>
                 <p class="lead">
-                    Загрузите изображение вагона, укажите тип вагона и получите результат YOLO-детекции
-                    вместе с проверкой по таблице правил ориентации.
+                    Загрузите изображения вагона с правой и левой камер, укажите тип вагона и получите
+                    результат YOLO-детекции вместе с проверкой по таблице правил ориентации.
                 </p>
 
                 <div class="intro-grid">
@@ -430,10 +444,10 @@
 
             <section class="panel workspace">
                 <div>
-                    <h2 class="section-title">Загрузка изображения</h2>
+                    <h2 class="section-title">Загрузка изображений</h2>
                     <p class="section-text">
-                        Форма отправляет изображение в API `/predict`, получает список найденных объектов
-                        и итоговую оценку ориентации вагона.
+                        Форма отправляет два изображения в API `/predict`: правую камеру для модели best.pt
+                        и левую камеру для модели best_2.pt.
                     </p>
                 </div>
 
@@ -442,16 +456,27 @@
                     <input type="text" id="wagonInput" placeholder="Например: 19-752">
                 </div>
 
-                <div class="upload" id="dropArea" onclick="document.getElementById('fileInput').click()">
-                    <div class="upload-icon">&#128444;</div>
-                    <strong>Перетащите изображение сюда или нажмите для выбора</strong>
-                    <p>Поддерживаются изображения в формате JPG, JPEG и PNG.</p>
-                    <input type="file" id="fileInput" accept="image/*" hidden>
+                <div class="upload-grid">
+                    <div class="upload" id="rightDropArea" onclick="document.getElementById('rightFileInput').click()">
+                        <small>Правая камера</small>
+                        <div class="upload-icon">&#128444;</div>
+                        <strong>Изображение для best.pt</strong>
+                        <p id="rightFileName">Перетащите файл сюда или нажмите для выбора.</p>
+                        <input type="file" id="rightFileInput" accept="image/*" hidden>
+                    </div>
+
+                    <div class="upload" id="leftDropArea" onclick="document.getElementById('leftFileInput').click()">
+                        <small>Левая камера</small>
+                        <div class="upload-icon">&#128444;</div>
+                        <strong>Изображение для best_2.pt</strong>
+                        <p id="leftFileName">Перетащите файл сюда или нажмите для выбора.</p>
+                        <input type="file" id="leftFileInput" accept="image/*" hidden>
+                    </div>
                 </div>
 
                 <div class="actions">
                     <button id="analyzeButton" type="button" onclick="analyze()">Запустить анализ</button>
-                    <span class="hint">После выбора файла появится предпросмотр исходного изображения.</span>
+                    <span class="hint">После выбора файлов появится предпросмотр изображений с обеих камер.</span>
                 </div>
 
                 <div id="status" class="status"></div>
@@ -460,17 +485,32 @@
 
         <section id="preview" class="grid" style="display:none;">
             <article class="card image-box">
-                <h3>Оригинал</h3>
+                <h3>Правая камера: оригинал</h3>
                 <div class="image-frame">
-                    <img id="origImg" alt="Исходное изображение">
+                    <img id="rightOrigImg" alt="Исходное изображение правой камеры">
                 </div>
             </article>
 
             <article class="card image-box">
-                <h3>Результат детекции</h3>
+                <h3>Правая камера: результат</h3>
                 <div class="image-frame">
-                    <img id="resultImg" alt="Результат детекции">
-                    <div id="resultPlaceholder" class="image-placeholder">Результат появится после анализа</div>
+                    <img id="rightResultImg" alt="Результат детекции правой камеры">
+                    <div id="rightResultPlaceholder" class="image-placeholder">Результат появится после анализа</div>
+                </div>
+            </article>
+
+            <article class="card image-box">
+                <h3>Левая камера: оригинал</h3>
+                <div class="image-frame">
+                    <img id="leftOrigImg" alt="Исходное изображение левой камеры">
+                </div>
+            </article>
+
+            <article class="card image-box">
+                <h3>Левая камера: результат</h3>
+                <div class="image-frame">
+                    <img id="leftResultImg" alt="Результат детекции левой камеры">
+                    <div id="leftResultPlaceholder" class="image-placeholder">Результат появится после анализа</div>
                 </div>
             </article>
         </section>
@@ -480,6 +520,7 @@
                 <div>
                     <h2>Результат анализа</h2>
                     <div class="results-meta">Найдено объектов: <span id="count">0</span></div>
+                    <div class="results-meta" id="decisionReason"></div>
                 </div>
                 <div id="orientationResult" class="orientation">Ориентация: -</div>
             </div>
@@ -489,15 +530,19 @@
     </main>
 
     <script>
-        let currentFile = null;
+        let rightFile = null;
+        let leftFile = null;
 
-        const fileInput = document.getElementById("fileInput");
+        const rightFileInput = document.getElementById("rightFileInput");
+        const leftFileInput = document.getElementById("leftFileInput");
         const preview = document.getElementById("preview");
         const results = document.getElementById("results");
         const statusBox = document.getElementById("status");
         const analyzeButton = document.getElementById("analyzeButton");
-        const dropArea = document.getElementById("dropArea");
-        const resultPlaceholder = document.getElementById("resultPlaceholder");
+        const rightDropArea = document.getElementById("rightDropArea");
+        const leftDropArea = document.getElementById("leftDropArea");
+        const rightResultPlaceholder = document.getElementById("rightResultPlaceholder");
+        const leftResultPlaceholder = document.getElementById("leftResultPlaceholder");
 
         function setStatus(message, isError = false) {
             statusBox.textContent = message;
@@ -505,33 +550,73 @@
             statusBox.className = isError ? "status error" : "status";
         }
 
-        function renderSelectedFile(file) {
-            currentFile = file;
+        function renderSelectedFile(file, side) {
+            if (side === "right") {
+                rightFile = file;
+                document.getElementById("rightFileName").textContent = file.name;
+            } else {
+                leftFile = file;
+                document.getElementById("leftFileName").textContent = file.name;
+            }
+
             const reader = new FileReader();
 
             reader.onload = function (event) {
-                document.getElementById("origImg").src = event.target.result;
-                document.getElementById("resultImg").removeAttribute("src");
-                resultPlaceholder.style.display = "block";
+                const originalImageId = side === "right" ? "rightOrigImg" : "leftOrigImg";
+                const resultImageId = side === "right" ? "rightResultImg" : "leftResultImg";
+                const placeholder = side === "right" ? rightResultPlaceholder : leftResultPlaceholder;
+
+                document.getElementById(originalImageId).src = event.target.result;
+                document.getElementById(resultImageId).removeAttribute("src");
+                placeholder.textContent = "Результат появится после анализа";
+                placeholder.style.display = "block";
                 preview.style.display = "grid";
                 results.style.display = "none";
-                setStatus(`Файл выбран: ${file.name}`);
+                setStatus(`Файл выбран для ${side === "right" ? "правой" : "левой"} камеры: ${file.name}`);
             };
 
             reader.readAsDataURL(file);
         }
 
-        fileInput.addEventListener("change", function (event) {
+        rightFileInput.addEventListener("change", function (event) {
             const file = event.target.files[0];
             if (!file) {
                 return;
             }
-            renderSelectedFile(file);
+            renderSelectedFile(file, "right");
         });
 
+        leftFileInput.addEventListener("change", function (event) {
+            const file = event.target.files[0];
+            if (!file) {
+                return;
+            }
+            renderSelectedFile(file, "left");
+        });
+
+        function renderSideResult(sidePayload, side) {
+            const resultImageId = side === "right" ? "rightResultImg" : "leftResultImg";
+            const placeholder = side === "right" ? rightResultPlaceholder : leftResultPlaceholder;
+
+            if (!sidePayload) {
+                document.getElementById(resultImageId).removeAttribute("src");
+                placeholder.textContent = "Левая модель не запускалась: совпадение найдено справа.";
+                placeholder.style.display = "block";
+                return [];
+            }
+
+            document.getElementById(resultImageId).src = "data:image/jpeg;base64," + sidePayload.result_image;
+            placeholder.style.display = "none";
+            return sidePayload.predictions.map((prediction) => ({
+                ...prediction,
+                side: side === "right" ? "Правая камера" : "Левая камера",
+                ruleMatch: sidePayload.rule_match,
+            }));
+        }
+
         async function analyze() {
-            if (!currentFile) {
-                setStatus("Сначала выберите изображение вагона.", true);
+            if (!rightFile || !leftFile) {
+                setStatus("Сначала выберите изображения для правой и левой камер.", true);
                 return;
             }
 
@@ -542,10 +627,11 @@
             }
 
             analyzeButton.disabled = true;
-            setStatus("Изображение отправлено в API. Выполняется анализ...");
+            setStatus("Изображения отправлены в API. Выполняется анализ...");
 
             const formData = new FormData();
-            formData.append("file", currentFile);
+            formData.append("right_file", rightFile);
+            formData.append("left_file", leftFile);
             formData.append("wagon_type", wagonType);
 
             try {
@@ -560,25 +646,29 @@
                     throw new Error(result.detail || result.error || "Ошибка обработки изображения.");
                 }
 
-                document.getElementById("resultImg").src = "data:image/jpeg;base64," + result.result_image;
-                resultPlaceholder.style.display = "none";
-                document.getElementById("count").textContent = result.count;
+                const predictions = [
+                    ...renderSideResult(result.right, "right"),
+                    ...renderSideResult(result.left, "left"),
+                ];
+                document.getElementById("count").textContent = predictions.length;
+                document.getElementById("decisionReason").textContent = result.decision_reason || "";
 
                 const predList = document.getElementById("predList");
                 predList.innerHTML = "";
 
-                if (!result.predictions.length) {
+                if (!predictions.length) {
                     const emptyState = document.createElement("div");
                     emptyState.className = "prediction-item";
-                    emptyState.innerHTML = "<strong>Объекты не найдены</strong><span>Модель не вернула детекций для этого изображения.</span>";
+                    emptyState.innerHTML = "<strong>Объекты не найдены</strong><span>Модели не вернули детекций для проверенных изображений.</span>";
                     predList.appendChild(emptyState);
                 } else {
-                    result.predictions.forEach((prediction, index) => {
+                    predictions.forEach((prediction, index) => {
                         const item = document.createElement("div");
                         item.className = "prediction-item";
                         item.innerHTML = `
                             <div>
                                 <strong>${index + 1}. ${prediction.class_name}</strong>
+                                <span>${prediction.side}; совпадение с правилами: ${prediction.ruleMatch ? "да" : "нет"}</span>
                                 <span>bbox: [${prediction.bbox_int.join(", ")}]</span>
                             </div>
                             <strong>${(prediction.confidence * 100).toFixed(1)}%</strong>
@@ -600,27 +690,32 @@
             }
         }
 
-        dropArea.addEventListener("dragover", function (event) {
-            event.preventDefault();
-            dropArea.classList.add("dragover");
-        });
+        function bindDropArea(dropArea, fileInput, side) {
+            dropArea.addEventListener("dragover", function (event) {
+                event.preventDefault();
+                dropArea.classList.add("dragover");
+            });
 
-        dropArea.addEventListener("dragleave", function () {
-            dropArea.classList.remove("dragover");
-        });
+            dropArea.addEventListener("dragleave", function () {
+                dropArea.classList.remove("dragover");
+            });
 
-        dropArea.addEventListener("drop", function (event) {
-            event.preventDefault();
-            dropArea.classList.remove("dragover");
+            dropArea.addEventListener("drop", function (event) {
+                event.preventDefault();
+                dropArea.classList.remove("dragover");
 
-            const file = event.dataTransfer.files[0];
-            if (!file) {
-                return;
-            }
+                const file = event.dataTransfer.files[0];
+                if (!file) {
+                    return;
+                }
 
-            fileInput.files = event.dataTransfer.files;
-            renderSelectedFile(file);
-        });
+                fileInput.files = event.dataTransfer.files;
+                renderSelectedFile(file, side);
+            });
+        }
+
+        bindDropArea(rightDropArea, rightFileInput, "right");
+        bindDropArea(leftDropArea, leftFileInput, "left");
     </script>
 </body>
 
