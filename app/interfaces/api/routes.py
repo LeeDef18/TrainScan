@@ -59,6 +59,7 @@ class RuleDecisionContext:
     orientation_service: OrientationService
     no_match_orientation: str
     decision_table: str
+    right_left_match_orientation: str | None = None
 
 
 @dataclass(frozen=True)
@@ -359,7 +360,43 @@ def run_side_rule_prediction(
     )
 
     left_result = None
+    right_left_allowed_classes: list[str] = []
+    right_left_matched_classes: list[str] = []
+    right_left_matched = False
     if not right_result.is_matched:
+        if context.right_left_match_orientation is not None:
+            (
+                right_left_allowed_classes,
+                right_left_matched_classes,
+                right_left_matched,
+            ) = get_side_rule_match(
+                right_result.payload,
+                wagon,
+                "left",
+                context.orientation_service,
+            )
+
+        if right_left_matched:
+            return {
+                "success": True,
+                "wagon_type": wagon_type,
+                "decision_table": context.decision_table,
+                "orientation_check": context.right_left_match_orientation,
+                "manual_review_required": False,
+                "decision_reason": (
+                    "Matched objects_left with best.pt right camera "
+                    f"in {context.decision_table}"
+                ),
+                "right": enrich_side_payload(
+                    right_result.payload,
+                    "objects_left",
+                    "best.pt",
+                    right_left_allowed_classes,
+                    right_left_matched_classes,
+                ),
+                "left": None,
+            }
+
         left_result = get_side_rule_result(
             left_image_bytes,
             wagon,
@@ -432,6 +469,7 @@ def run_two_camera_prediction(
                 orientation_service=use_case.orientation_service,
                 no_match_orientation="UNDEFINED",
                 decision_table="rule_table.csv",
+                right_left_match_orientation="B",
             ),
         )
 

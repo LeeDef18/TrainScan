@@ -56,6 +56,7 @@ class DummyRuleRepositories:
 class DummyPredictUseCase:
     def __init__(self, matched_side="right", table="regular"):
         self.matched_side = matched_side
+        self.match_calls = []
         self.rule_repositories = DummyRuleRepositories(table)
         self.preprocessor = lambda image: image
         self.inference = self
@@ -99,6 +100,13 @@ class DummyPredictUseCase:
         return ["brake_valve"]
 
     def get_matched_classes_for_side(self, prediction, wagon, side):
+        self.match_calls.append(side)
+        if self.matched_side == "right_left":
+            return ["brake_valve"] if self.match_calls == ["right", "left"] else []
+        if self.matched_side == "left":
+            return (
+                ["brake_valve"] if self.match_calls == ["right", "left", "left"] else []
+            )
         return ["brake_valve"] if side == self.matched_side else []
 
 
@@ -226,6 +234,24 @@ def test_predict_endpoint_returns_a_when_left_side_matches():
     assert response["decision_reason"] == (
         "Matched objects_left with best_2.pt in rule_table.csv"
     )
+
+
+def test_predict_endpoint_returns_b_when_right_matches_left_rules():
+    image_bytes = make_image_bytes()
+
+    response = asyncio.run(
+        routes.predict(
+            right_file=cast(Any, DummyUploadFile("right.jpg", image_bytes)),
+            left_file=cast(Any, DummyUploadFile("left.jpg", image_bytes)),
+            wagon_type="19-752",
+            use_case=cast(Any, DummyPredictUseCase(matched_side="right_left")),
+        )
+    )
+
+    assert response["orientation_check"] == "B"
+    assert response["right"]["matched_rule_side"] == "objects_left"
+    assert response["right"]["rule_match"] is True
+    assert response["left"] is None
 
 
 def test_predict_endpoint_returns_undefined_for_regular_without_matches():
