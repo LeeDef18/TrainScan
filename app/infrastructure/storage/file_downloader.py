@@ -7,8 +7,14 @@ class FileDownloader:
     def __init__(self, storage: StoragePort):
         self.storage = storage
 
-    def ensure_file(self, bucket: str, key: str, path: str) -> str:
-        if os.path.exists(path):
+    def ensure_file(
+        self,
+        bucket: str,
+        key: str,
+        path: str,
+        force_download: bool = False,
+    ) -> str:
+        if os.path.exists(path) and not force_download:
             return path
 
         directory = os.path.dirname(path)

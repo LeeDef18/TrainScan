@@ -18,17 +18,24 @@ class DummyStorage:
 
 def test_csv_repository_reads_multiple_objects(tmp_path):
     file = tmp_path / "rules.csv"
-    file.write_text('Model,Objects\nA,"door, window"\nB,signal\n', encoding="utf-8")
+    file.write_text(
+        "Model;objects_left;objects_right;;\n" "A;door;window;;\n" "B;signal;None;;\n",
+        encoding="utf-8",
+    )
 
     repository = CsvOrientationRulesRepository(str(file))
 
     assert repository.get_rules_for_wagon("A") == ["door", "window"]
+    assert repository.get_rules_for_wagon_side("A", "left") == ["door"]
+    assert repository.get_rules_for_wagon_side("A", "right") == ["window"]
+    assert repository.get_rules_for_wagon_side("B", "right") == []
     assert repository.get_rules_for_wagon("missing") == []
 
 
 def test_get_settings_reads_environment(monkeypatch):
     get_settings.cache_clear()
     monkeypatch.setenv("MODEL_PATH", "custom-model.pt")
+    monkeypatch.setenv("MODEL_2_PATH", "custom-model-2.pt")
     monkeypatch.setenv("MODEL_BUCKET", "model-bucket")
     monkeypatch.setenv("RULE_TABLE_PATH", "rules.csv")
     monkeypatch.setenv("RULE_TABLE_BUCKET", "rules-bucket")
@@ -36,6 +43,7 @@ def test_get_settings_reads_environment(monkeypatch):
     monkeypatch.delenv("S3_KEY", raising=False)
     monkeypatch.delenv("S3_SECRET", raising=False)
     monkeypatch.setenv("MODEL_KEY", "weights.pt")
+    monkeypatch.setenv("MODEL_2_KEY", "weights-2.pt")
     monkeypatch.setenv("RULE_TABLE_KEY", "orientation.csv")
     monkeypatch.setenv("MODEL_CONF", "0.5")
     monkeypatch.setenv("MODEL_IOU", "0.6")
@@ -47,11 +55,13 @@ def test_get_settings_reads_environment(monkeypatch):
     settings = get_settings()
 
     assert settings.model_path == "custom-model.pt"
+    assert settings.second_model_path == "custom-model-2.pt"
     assert settings.model_bucket == "model-bucket"
     assert settings.rule_table_path == "rules.csv"
     assert settings.rule_table_bucket == "rules-bucket"
     assert settings.s3_endpoint == "https://example.com"
     assert settings.model_key == "weights.pt"
+    assert settings.second_model_key == "weights-2.pt"
     assert settings.rule_table_key == "orientation.csv"
     assert settings.conf == 0.5
     assert settings.iou == 0.6

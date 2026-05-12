@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+
 from app.application.dto.prediction_response import PredictionResponse
 from app.application.ports.detection_extractor_port import DetectionExtractorPort
 from app.application.ports.inference_port import InferencePort
@@ -6,15 +8,22 @@ from app.domain.entities.prediction import Wagon
 from app.domain.services.orientation_service import OrientationService
 
 
+@dataclass(frozen=True)
+class PredictInferences:
+    right: InferencePort
+    left: InferencePort
+
+
 class PredictUseCase:
     def __init__(
         self,
-        inference: InferencePort,
+        inferences: PredictInferences,
         preprocessor: PreprocessorPort,
         orientation_service: OrientationService,
         detection_extractor: DetectionExtractorPort,
     ):
-        self.inference = inference
+        self.inference = inferences.right
+        self.left_inference = inferences.left
         self.preprocessor = preprocessor
         self.orientation_service = orientation_service
         self.detection_extractor = detection_extractor

@@ -1,4 +1,4 @@
-from app.application.predict_use_case import PredictUseCase
+from app.application.predict_use_case import PredictInferences, PredictUseCase
 from app.domain.entities.prediction import Detection, Wagon
 from app.domain.services.orientation_service import OrientationService
 from app.infrastructure.model.detection_extractor import YoloDetectionExtractor
@@ -29,8 +29,9 @@ def test_usecase_returns_prediction_response(tmp_path):
     file.write_text("Model,Objects\nA,door\n", encoding="utf-8")
 
     repository = CsvOrientationRulesRepository(str(file))
+    inference = DummyInference()
     use_case = PredictUseCase(
-        inference=DummyInference(),
+        inferences=PredictInferences(right=inference, left=inference),
         preprocessor=lambda image: image,
         orientation_service=OrientationService(repository),
         detection_extractor=YoloDetectionExtractor(),

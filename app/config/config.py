@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     )
 
     model_path: str = Field(default="model/best.pt", alias="MODEL_PATH")
+    second_model_path: str = Field(default="model/best_2.pt", alias="MODEL_2_PATH")
     model_bucket: str = Field(default="wagon-models", alias="MODEL_BUCKET")
     rule_table_path: str = Field(
         default="data/rules/rule_table.csv",
@@ -23,6 +24,7 @@ class Settings(BaseSettings):
     s3_key: str | None = Field(default=None, alias="S3_KEY")
     s3_secret: str | None = Field(default=None, alias="S3_SECRET")
     model_key: str = Field(default="best.pt", alias="MODEL_KEY")
+    second_model_key: str = Field(default="best_2.pt", alias="MODEL_2_KEY")
     rule_table_key: str = Field(default="rule_table.csv", alias="RULE_TABLE_KEY")
     conf: float = Field(default=0.25, alias="MODEL_CONF")
     iou: float = Field(default=0.45, alias="MODEL_IOU")

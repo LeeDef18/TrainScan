@@ -22,7 +22,7 @@ from app.application.dto.rule_validation_request import (
     RuleValidationRequest,
     WeightedEvidenceItem,
 )
-from app.application.predict_use_case import PredictUseCase
+from app.application.predict_use_case import PredictInferences, PredictUseCase
 from app.application.validate_rules_use_case import ValidateRulesUseCase
 from app.config.config import get_settings
 from app.domain.entities.prediction import Detection, PredictionResult, Wagon
@@ -64,14 +64,32 @@ def build_predict_use_case() -> PredictUseCase:
     settings = get_settings()
     s3_client = S3Client(settings.s3_endpoint, settings.s3_key, settings.s3_secret)
     file_downloader = FileDownloader(s3_client)
-    model_loader = ModelLoader(settings, s3_client=s3_client)
-    model = model_loader.get_model()
+    right_model_loader = ModelLoader(
+        settings,
+        s3_client=s3_client,
+        model_path=settings.model_path,
+        model_key=settings.model_key,
+    )
+    left_model_loader = ModelLoader(
+        settings,
+        s3_client=s3_client,
+        model_path=settings.second_model_path,
+        model_key=settings.second_model_key,
+    )
+    right_model = right_model_loader.get_model()
+    left_model = left_model_loader.get_model()
     rule_table_path = file_downloader.ensure_file(
         bucket=settings.rule_table_bucket,
         key=settings.rule_table_key,
         path=settings.rule_table_path,
+        force_download=True,
     )
-    inference = YOLOInference(model=model, conf=settings.conf, iou=settings.iou)
+    right_inference = YOLOInference(
+        model=right_model, conf=settings.conf, iou=settings.iou
+    )
+    left_inference = YOLOInference(
+        model=left_model, conf=settings.conf, iou=settings.iou
+    )
     rules_repository = CsvOrientationRulesRepository(rule_table_path)
     orientation_service = OrientationService(rules_repository)
     detection_extractor = YoloDetectionExtractor()
@@ -80,7 +98,7 @@ def build_predict_use_case() -> PredictUseCase:
         return preprocess_image(image)
 
     return PredictUseCase(
-        inference=inference,
+        inferences=PredictInferences(right=right_inference, left=left_inference),
         preprocessor=preprocess_for_use_case,
         orientation_service=orientation_service,
         detection_extractor=detection_extractor,
@@ -95,6 +113,7 @@ def build_validate_rules_use_case() -> ValidateRulesUseCase:
         bucket=settings.rule_table_bucket,
         key=settings.rule_table_key,
         path=settings.rule_table_path,
+        force_download=True,
     )
     rules_repository = CsvOrientationRulesRepository(rule_table_path)
     orientation_service = OrientationService(rules_repository)
@@ -116,27 +135,124 @@ def read_image_bytes(image_bytes: bytes) -> Any:
         raise HTTPException(status_code=400, detail="Invalid image") from exc
 
 
-def run_prediction(
+def run_side_prediction(
     image_bytes: bytes,
     wagon_type: str,
     use_case: PredictUseCase,
+    side: str,
 ) -> dict:
     pil_image = read_image_bytes(image_bytes)
     processed_image = use_case.preprocessor(pil_image)
-    raw_result = use_case.inference.predict(processed_image)
+    inference = use_case.inference if side == "right" else use_case.left_inference
+    raw_result = inference.predict(processed_image)
     prediction = use_case.detection_extractor.extract(
         raw_result,
-        use_case.inference.get_class_names(),
+        inference.get_class_names(),
     )
-    wagon = Wagon(wagon_type=wagon_type)
-    orientation = use_case.orientation_service.check(prediction, wagon)
-    response = PredictionResponse(prediction=prediction, orientation=orientation)
+    response = PredictionResponse(
+        prediction=prediction,
+        orientation=use_case.orientation_service.check(prediction, Wagon(wagon_type)),
+    )
     return serialize_prediction_response(
         response=response,
         raw_result=raw_result,
         image_bytes=image_bytes,
         wagon_type=wagon_type,
     )
+
+
+def run_prediction(
+    image_bytes: bytes,
+    wagon_type: str,
+    use_case: PredictUseCase,
+) -> dict:
+    return run_side_prediction(image_bytes, wagon_type, use_case, "right")
+
+
+def run_two_camera_prediction(
+    right_image_bytes: bytes,
+    left_image_bytes: bytes,
+    wagon_type: str,
+    use_case: PredictUseCase,
+) -> dict:
+    wagon = Wagon(wagon_type=wagon_type)
+    right_payload = run_side_prediction(
+        right_image_bytes,
+        wagon_type,
+        use_case,
+        "right",
+    )
+    right_prediction = PredictionResult(
+        detections=[
+            Detection(
+                class_id=prediction["class"],
+                class_name=prediction["class_name"],
+                confidence=prediction["confidence"],
+            )
+            for prediction in right_payload["predictions"]
+        ]
+    )
+    right_matched = use_case.orientation_service.has_match_for_side(
+        right_prediction,
+        wagon,
+        "right",
+    )
+
+    left_payload = None
+    left_matched = False
+    if not right_matched:
+        left_payload = run_side_prediction(
+            left_image_bytes,
+            wagon_type,
+            use_case,
+            "left",
+        )
+        left_prediction = PredictionResult(
+            detections=[
+                Detection(
+                    class_id=prediction["class"],
+                    class_name=prediction["class_name"],
+                    confidence=prediction["confidence"],
+                )
+                for prediction in left_payload["predictions"]
+            ]
+        )
+        left_matched = use_case.orientation_service.has_match_for_side(
+            left_prediction,
+            wagon,
+            "left",
+        )
+
+    return {
+        "success": True,
+        "wagon_type": wagon_type,
+        "orientation_check": "A" if right_matched else "B",
+        "decision_reason": (
+            "Matched objects_right with best.pt"
+            if right_matched
+            else (
+                "Matched objects_left with best_2.pt"
+                if left_matched
+                else "No rule objects matched on either side"
+            )
+        ),
+        "right": {
+            **right_payload,
+            "matched_rule_side": "objects_right",
+            "model_key": "best.pt",
+            "rule_match": right_matched,
+        },
+        "left": (
+            None
+            if left_payload is None
+            else {
+                **left_payload,
+                "matched_rule_side": "objects_left",
+                "model_key": "best_2.pt",
+                "rule_match": left_matched,
+            }
+        ),
+    }
 
 
 def build_batch_orientation(
@@ -171,13 +287,20 @@ async def healthcheck():
 
 @router.post("/predict", tags=["prediction"])
 async def predict(
-    file: UploadFile = File(...),
+    right_file: UploadFile = File(...),
+    left_file: UploadFile = File(...),
     wagon_type: str = Form(...),
     use_case: PredictUseCase = Depends(get_predict_use_case),
 ):
-    image_bytes = await file.read()
+    right_image_bytes = await right_file.read()
+    left_image_bytes = await left_file.read()
 
-    return run_prediction(image_bytes, wagon_type, use_case)
+    return run_two_camera_prediction(
+        right_image_bytes,
+        left_image_bytes,
+        wagon_type,
+        use_case,
+    )
 
 
 @router.post("/predict-batch", tags=["prediction"])

@@ -34,6 +34,7 @@ class DummyPredictUseCase:
     def __init__(self):
         self.preprocessor = lambda image: image
         self.inference = self
+        self.left_inference = self
         self.detection_extractor = self
         self.orientation_service = self
 
@@ -65,6 +66,9 @@ class DummyPredictUseCase:
 
     def check(self, prediction, wagon):
         return type("OrientationLike", (), {"label": "A"})()
+
+    def has_match_for_side(self, prediction, wagon, side):
+        return side == "right"
 
 
 class DummyValidateRulesUseCase:
@@ -150,3 +154,20 @@ def test_predict_batch_endpoint_returns_aggregated_response():
     assert response["summary"]["detections_total"] == 2
     assert response["frames"][0]["filename"] == "frame1.jpg"
     assert response["weighted_evidence"]["brake_valve"]["frames_detected"] == 2
+
+
+def test_predict_endpoint_uses_two_camera_payload():
+    image_bytes = make_image_bytes()
+
+    response = asyncio.run(
+        routes.predict(
+            right_file=cast(Any, DummyUploadFile("right.jpg", image_bytes)),
+            left_file=cast(Any, DummyUploadFile("left.jpg", image_bytes)),
+            wagon_type="19-752",
+            use_case=cast(Any, DummyPredictUseCase()),
+        )
+    )
+
+    assert response["orientation_check"] == "A"
+    assert response["right"]["rule_match"] is True
+    assert response["left"] is None

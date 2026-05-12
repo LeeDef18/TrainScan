@@ -11,6 +11,11 @@ class OrientationService:
     def get_allowed_classes(self, wagon: Wagon) -> list[str]:
         return sorted(set(self.rules_repository.get_rules_for_wagon(wagon.wagon_type)))
 
+    def get_allowed_classes_for_side(self, wagon: Wagon, side: str) -> list[str]:
+        return sorted(
+            set(self.rules_repository.get_rules_for_wagon_side(wagon.wagon_type, side))
+        )
+
     def check(
         self,
         prediction: PredictionResult,
@@ -23,3 +28,15 @@ class OrientationService:
                 return OrientationResult("A")
 
         return OrientationResult("B")
+
+    def has_match_for_side(
+        self,
+        prediction: PredictionResult,
+        wagon: Wagon,
+        side: str,
+    ) -> bool:
+        allowed_classes = set(self.get_allowed_classes_for_side(wagon, side))
+        return any(
+            detected_class in allowed_classes
+            for detected_class in prediction.detected_classes
+        )
