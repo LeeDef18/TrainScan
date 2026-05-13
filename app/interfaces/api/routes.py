@@ -60,6 +60,7 @@ class RuleDecisionContext:
     no_match_orientation: str
     decision_table: str
     right_left_match_orientation: str | None = None
+    left_right_match_orientation: str | None = None
 
 
 @dataclass(frozen=True)
@@ -271,6 +272,21 @@ def get_side_rule_match(
     return allowed_classes, matched_classes, bool(matched_classes)
 
 
+def build_side_rule_result(
+    payload: dict,
+    wagon: Wagon,
+    side: str,
+    orientation_service: OrientationService,
+) -> SideRuleResult:
+    allowed_classes, matched_classes, _ = get_side_rule_match(
+        payload,
+        wagon,
+        side,
+        orientation_service,
+    )
+    return SideRuleResult(payload, allowed_classes, matched_classes)
+
+
 def get_side_rule_result(
     image_bytes: bytes,
     wagon: Wagon,
@@ -279,13 +295,12 @@ def get_side_rule_result(
     orientation_service: OrientationService,
 ) -> SideRuleResult:
     payload = run_side_prediction(image_bytes, wagon.wagon_type, use_case, side)
-    allowed_classes, matched_classes, _ = get_side_rule_match(
+    return build_side_rule_result(
         payload,
         wagon,
         side,
         orientation_service,
     )
-    return SideRuleResult(payload, allowed_classes, matched_classes)
 
 
 def build_exception_prediction(
@@ -360,23 +375,17 @@ def run_side_rule_prediction(
     )
 
     left_result = None
-    right_left_allowed_classes: list[str] = []
-    right_left_matched_classes: list[str] = []
-    right_left_matched = False
+    right_left_result = None
     if not right_result.is_matched:
         if context.right_left_match_orientation is not None:
-            (
-                right_left_allowed_classes,
-                right_left_matched_classes,
-                right_left_matched,
-            ) = get_side_rule_match(
+            right_left_result = build_side_rule_result(
                 right_result.payload,
                 wagon,
                 "left",
                 context.orientation_service,
             )
 
-        if right_left_matched:
+        if right_left_result is not None and right_left_result.is_matched:
             return {
                 "success": True,
                 "wagon_type": wagon_type,
@@ -391,8 +400,8 @@ def run_side_rule_prediction(
                     right_result.payload,
                     "objects_left",
                     "best.pt",
-                    right_left_allowed_classes,
-                    right_left_matched_classes,
+                    right_left_result.allowed_classes,
+                    right_left_result.matched_classes,
                 ),
                 "left": None,
             }
@@ -406,6 +415,46 @@ def run_side_rule_prediction(
         )
 
     left_matched = left_result.is_matched if left_result is not None else False
+    left_right_result = None
+    if (
+        left_result is not None
+        and not left_result.is_matched
+        and context.left_right_match_orientation is not None
+    ):
+        left_right_result = build_side_rule_result(
+            left_result.payload,
+            wagon,
+            "right",
+            context.orientation_service,
+        )
+
+    if left_right_result is not None and left_right_result.is_matched:
+        return {
+            "success": True,
+            "wagon_type": wagon_type,
+            "decision_table": context.decision_table,
+            "orientation_check": context.left_right_match_orientation,
+            "manual_review_required": False,
+            "decision_reason": (
+                "Matched objects_right with best_2.pt left camera "
+                f"in {context.decision_table}"
+            ),
+            "right": enrich_side_payload(
+                right_result.payload,
+                "objects_right",
+                "best.pt",
+                right_result.allowed_classes,
+                right_result.matched_classes,
+            ),
+            "left": enrich_side_payload(
+                left_result.payload,
+                "objects_right",
+                "best_2.pt",
+                left_right_result.allowed_classes,
+                left_right_result.matched_classes,
+            ),
+        }
+
     orientation = (
         "A" if right_result.is_matched or left_matched else context.no_match_orientation
     )
@@ -470,6 +519,7 @@ def run_two_camera_prediction(
                 no_match_orientation="UNDEFINED",
                 decision_table="rule_table.csv",
                 right_left_match_orientation="B",
+                left_right_match_orientation="B",
             ),
         )
 

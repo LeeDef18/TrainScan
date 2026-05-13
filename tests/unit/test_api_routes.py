@@ -103,6 +103,12 @@ class DummyPredictUseCase:
         self.match_calls.append(side)
         if self.matched_side == "right_left":
             return ["brake_valve"] if self.match_calls == ["right", "left"] else []
+        if self.matched_side == "left_right":
+            return (
+                ["brake_valve"]
+                if self.match_calls == ["right", "left", "left", "right"]
+                else []
+            )
         if self.matched_side == "left":
             return (
                 ["brake_valve"] if self.match_calls == ["right", "left", "left"] else []
@@ -252,6 +258,23 @@ def test_predict_endpoint_returns_b_when_right_matches_left_rules():
     assert response["right"]["matched_rule_side"] == "objects_left"
     assert response["right"]["rule_match"] is True
     assert response["left"] is None
+
+
+def test_predict_endpoint_returns_b_when_left_matches_right_rules():
+    image_bytes = make_image_bytes()
+
+    response = asyncio.run(
+        routes.predict(
+            right_file=cast(Any, DummyUploadFile("right.jpg", image_bytes)),
+            left_file=cast(Any, DummyUploadFile("left.jpg", image_bytes)),
+            wagon_type="19-752",
+            use_case=cast(Any, DummyPredictUseCase(matched_side="left_right")),
+        )
+    )
+
+    assert response["orientation_check"] == "B"
+    assert response["left"]["matched_rule_side"] == "objects_right"
+    assert response["left"]["rule_match"] is True
 
 
 def test_predict_endpoint_returns_undefined_for_regular_without_matches():
