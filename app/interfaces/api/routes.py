@@ -428,7 +428,11 @@ def run_side_rule_prediction(
             context.orientation_service,
         )
 
-    if left_right_result is not None and left_right_result.is_matched:
+    if (
+        left_result is not None
+        and left_right_result is not None
+        and left_right_result.is_matched
+    ):
         return {
             "success": True,
             "wagon_type": wagon_type,
